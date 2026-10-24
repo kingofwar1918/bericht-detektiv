@@ -1,0 +1,2138 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<title>Bericht-Detektiv</title>
+<style>
+:root{
+  --bg:#f4f5f7; --karte:#ffffff; --text:#111827; --gedaempft:#4b5563;
+  --akzent:#1d3557; --akzent-hell:#2f5d8a; --wahl:#c2410c; --rand:#c9ced6;
+  --richtig:#166534; --richtig-bg:#e6f4ea; --falsch:#9f1d1d; --falsch-bg:#fbeaea;
+  --merk-bg:#eef2f7; --radius:14px; --tap:56px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+     background:var(--bg);color:var(--text);font-size:20px;line-height:1.5}
+.huelle{max-width:900px;margin:0 auto;padding:12px 16px 72px}
+header.kopf{display:flex;align-items:center;justify-content:space-between;gap:10px;
+            padding:6px 0 10px;border-bottom:2px solid var(--rand);margin-bottom:14px}
+header.kopf h1{font-size:1.35rem;margin:0;color:var(--akzent)}
+.status{font-size:.85rem;color:var(--gedaempft)}
+h2{font-size:1.3rem;margin:.2em 0 .5em;line-height:1.35}
+h3{font-size:1.1rem;margin:.8em 0 .3em}
+p{margin:.4em 0}
+.karte{background:var(--karte);border:1px solid var(--rand);border-radius:var(--radius);
+       padding:20px;margin-bottom:14px}
+button{font:inherit;min-height:var(--tap);min-width:var(--tap);padding:12px 18px;border-radius:12px;
+       border:2px solid var(--rand);background:var(--karte);color:var(--text);cursor:pointer;
+       touch-action:manipulation;-webkit-user-select:none;user-select:none}
+button:focus-visible{outline:3px solid var(--akzent-hell);outline-offset:2px}
+button[disabled]{cursor:default}
+.primaer{background:var(--akzent);border-color:var(--akzent);color:#fff;font-weight:600}
+.primaer[disabled]{background:#9aa5b4;border-color:#9aa5b4}
+.klein{min-height:48px;font-size:1rem;padding:8px 14px}
+.breit{width:100%;text-align:left}
+.stapel{display:grid;gap:12px;margin:14px 0}
+.zeile{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.gedaempft{color:var(--gedaempft);font-size:.92rem}
+.verborgen{display:none !important}
+.leiste{height:12px;background:#dde2e8;border-radius:99px;overflow:hidden;margin:6px 0 4px}
+.leiste > i{display:block;height:100%;background:var(--akzent-hell);width:0;transition:width .2s}
+.antwort{width:100%;text-align:left;font-size:1.1rem;line-height:1.4}
+.antwort.richtig{background:var(--richtig-bg);border-color:var(--richtig);color:var(--richtig);font-weight:600}
+.antwort.falsch{background:var(--falsch-bg);border-color:var(--falsch);color:var(--falsch)}
+.antwort .marke{display:block;font-size:.85rem;font-weight:700;margin-bottom:2px}
+.rueckmeldung{margin-top:14px;padding:14px;border-radius:12px;border:2px solid transparent}
+.rueckmeldung.ok{background:var(--richtig-bg);border-color:var(--richtig);color:#0f3d1f}
+.rueckmeldung.nein{background:var(--falsch-bg);border-color:var(--falsch);color:#5c1111}
+.merksatz{margin-top:12px;padding:12px 14px;background:var(--merk-bg);border-left:6px solid var(--akzent);
+          border-radius:8px;font-size:1rem}
+.merksatz b{display:block;font-size:.85rem;color:var(--akzent);text-transform:uppercase;letter-spacing:.04em}
+.weiter-zeile{margin-top:16px;display:flex;justify-content:flex-end}
+.wahlknopf{display:flex;align-items:center;gap:14px;text-align:left;width:100%}
+.wahlknopf .sym{font-weight:800;color:var(--akzent);min-width:64px;text-align:center;flex:none;font-size:1.1rem}
+.primaer.wahlknopf .sym{color:#fff}
+.primaer.wahlknopf small{color:#dbe4f0}
+button[disabled]:not(.richtig):not(.falsch):not(.fix):not(.erledigt):not(.primaer){opacity:.55}
+.paar{display:inline-flex;align-items:flex-end;gap:2px}
+.wahlknopf small{display:block;color:var(--gedaempft);font-size:.9rem;font-weight:400}
+.segment{display:flex;gap:8px}
+.segment button{flex:1}
+.segment button.an{background:var(--akzent);color:#fff;border-color:var(--akzent);font-weight:600}
+input[type=text],input[type=password],textarea{font:inherit;min-height:var(--tap);padding:10px 12px;
+  border:2px solid var(--rand);border-radius:12px;width:100%;background:#fff;color:var(--text)}
+textarea{min-height:200px;line-height:1.5;resize:vertical}
+input:focus,textarea:focus{outline:3px solid var(--akzent-hell);outline-offset:1px}
+label{display:block;font-weight:600;margin:12px 0 6px}
+.fehlertext{color:var(--falsch);font-weight:600;margin-top:8px}
+/* Modus 2: Satzteile */
+.satz{display:flex;flex-wrap:wrap;gap:10px 8px;align-items:flex-end;margin:10px 0 6px;font-size:1.15rem}
+.satz .text{padding:12px 2px}
+.teil{position:relative;border:2px dashed var(--akzent-hell);background:#f7f9fc}
+.teil.gewaehlt{border:3px solid var(--wahl);background:#fff7ed}
+.teil.erledigt{border:2px solid var(--richtig);background:var(--richtig-bg);color:var(--richtig);padding-top:24px}
+.teil .etikett{position:absolute;top:2px;left:8px;font-size:.8rem;font-weight:700}
+.wraster{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:12px}
+.wraster button{font-weight:600}
+.wraster button.falsch{background:var(--falsch-bg);border-color:var(--falsch);color:var(--falsch)}
+/* Ergebnis: Fehlermuster */
+.muster{margin-top:12px;padding:12px 14px;background:#fff7ed;border-left:6px solid var(--wahl);border-radius:8px;color:#3b1d06}
+.muster ul{margin:6px 0 0;padding-left:22px}
+/* LP: Klassenziel und oft falsche Aufgaben */
+.ziel-balken{height:32px;background:#dde2e8;border-radius:99px;overflow:hidden;margin:12px 0}
+.ziel-balken i{display:block;height:100%;background:var(--richtig)}
+.ziel-zahl{font-size:2.2rem;font-weight:800;color:var(--akzent);margin:6px 0}
+.fehlerliste{margin:6px 0;padding-left:22px}
+.fehlerliste li{margin:6px 0}
+/* Modus 3: Reihenfolge */
+.plaetze{display:grid;gap:10px;margin:10px 0 16px;padding:0;list-style:none}
+.platz{display:flex;gap:12px;align-items:center}
+.platz .nr{flex:none;width:44px;height:44px;border-radius:50%;background:var(--akzent);color:#fff;
+           display:flex;align-items:center;justify-content:center;font-weight:700}
+.platz .leer{flex:1;min-height:var(--tap);border:2px dashed var(--rand);border-radius:12px;
+             display:flex;align-items:center;padding:0 14px;color:var(--gedaempft)}
+.platz button{flex:1;text-align:left}
+.platz button.fix{background:var(--richtig-bg);border-color:var(--richtig);color:var(--richtig);font-weight:600}
+.pool{display:grid;gap:10px}
+/* Modus 4: Lücke */
+.luecke{display:inline-block;min-width:110px;border-bottom:3px solid var(--akzent);text-align:center;
+        font-weight:700;color:var(--richtig)}
+/* Check-Bot */
+.markiert{background:#fff1d6;border-bottom:3px solid var(--wahl);padding:0 2px;border-radius:3px}
+.cb-text{white-space:pre-wrap;padding:14px;background:#fafafa;border:1px solid var(--rand);border-radius:12px;line-height:1.8}
+.cb-liste{list-style:none;padding:0;margin:8px 0}
+.cb-liste li{padding:10px 12px;border-radius:10px;margin-bottom:8px}
+.cb-liste.gut li{background:var(--richtig-bg);color:#0f3d1f}
+.cb-liste.hin li{background:#fff7ed;color:#5a2a0a;border-left:5px solid var(--wahl)}
+/* LP-Ansicht */
+.code{font-size:3.2rem;font-weight:800;letter-spacing:.2em;color:var(--akzent);margin:0}
+table{width:100%;border-collapse:collapse;font-size:1rem}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--rand);vertical-align:middle}
+th{font-size:.85rem;color:var(--gedaempft)}
+.minibalken{height:10px;background:#dde2e8;border-radius:99px;overflow:hidden;min-width:80px}
+.minibalken i{display:block;height:100%;background:var(--akzent-hell)}
+.rang{font-size:2rem}
+.rang li{margin:10px 0}
+.spalten{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:700px){.spalten{grid-template-columns:1fr}}
+.uebersicht-item{border-bottom:1px solid var(--rand);padding:8px 0;font-size:.95rem}
+.papier-wahl{padding:3px 0}
+.papier-reihe{display:flex;gap:24px;flex-wrap:wrap}
+.papier-satz{line-height:2.4}
+.papier-name{font-size:1.05rem;margin:6px 0 10px}
+.dialog-hg{position:fixed;inset:0;background:rgba(17,24,39,.5);display:flex;
+           align-items:center;justify-content:center;padding:20px;z-index:50}
+.dialog{background:#fff;border-radius:var(--radius);padding:22px;max-width:460px;width:100%}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+@media print{
+  body{background:#fff;font-size:11pt}
+  button,.nicht-drucken,header.kopf{display:none !important}
+  .karte{border:1px solid #999;margin-bottom:8px;padding:8px}
+  .uebersicht-item{break-inside:avoid}
+  .huelle{max-width:none;padding:0}
+  .spalten{grid-template-columns:1fr 1fr}
+}
+  .beamer-satz { font-size: 1.5rem; line-height: 1.8; margin: 14px 0; }
+  .beamer-liste { font-size: 1.25rem; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="huelle">
+  <header class="kopf nicht-drucken">
+    <h1>Bericht-Detektiv</h1>
+    <div class="zeile">
+      <span class="status" id="status"></span>
+      <button class="klein" id="startknopf" type="button">Start</button>
+    </div>
+  </header>
+  <main id="buehne"></main>
+</div>
+
+<!-- Konfiguration (Platzhalter). Fehlt die Datei, läuft die App im Einzelmodus. -->
+<script src="firebase-config.js" onerror="window.BD_KONFIG_FEHLT = true"></script>
+
+<script>
+"use strict";
+/* ========================================================================
+   1. INHALT: nur dieser Block enthält Fragen und Texte.
+   Die Logik weiter unten kennt keine konkreten Aufgaben.
+
+   Version A = Fassung ● (Inhalte der bisherigen Version B, Stand 09.10.2026)
+   Version B = Fassung ■ (neu: Sätze mit Nebensätzen, 3 bis 4 Auswahl-
+               möglichkeiten mit ähnlich klingenden Fallen, 6 bis 7 Schritte)
+   Auf dem Bildschirm der Lernenden steht nie «einfach» oder «schwer».
+
+   Verbindlich: 01_entscheide.md (§0 Figuren/Orte, §1 Fachbegriffe,
+   §2 Merksätze wortgleich, Nachtrag 2: keine Prüfungs-, Probe-, FLK-
+   und Kap.-7-Inhalte).
+   ======================================================================== */
+const DATEN = {
+
+  /* Merksätze wortgleich aus 01_entscheide.md §2 (M2 mit « - » als Trenner) */
+  merksaetze: {
+    M1: "Ein Bericht informiert sachlich über ein Ereignis. Er beantwortet die W-Fragen. Er steht im Präteritum.",
+    M2: "Einleitung: Wer? Was? Wann? Wo? - Hauptteil: Wie? Der Reihe nach. - Schluss: Warum? Welche Folgen?",
+    M3: "Sachlich heisst: keine Gefühle, keine Meinung, keine Übertreibung.",
+    M4: "Eine Anleitung erklärt Schritt für Schritt, wie man etwas macht. Die Schritte sind nummeriert. Sie stehen in der Befehlsform."
+  },
+
+  /* Die fünf Modi. sym = kurzes Textzeichen auf dem Knopf (kein Bild, kein Emoji: reizarm) */
+  modi: [
+    { id: "m1", name: "Bericht oder Erzählung?", sym: "B|E", info: "Finde den Satz aus einem Bericht.", merksatz: "M3" },
+    { id: "m2", name: "W-Fragen finden",         sym: "W?", info: "Welche W-Frage beantwortet der Satzteil?", merksatz: "M2" },
+    { id: "m3", name: "Anleitung ordnen",        sym: "1-2-3", info: "Bring die Schritte in die richtige Reihenfolge.", merksatz: "M4" },
+    { id: "m4", name: "Präteritum",              sym: "-te", info: "Wähle die richtige Verbform.", merksatz: "M1" },
+    { id: "m5", name: "Check-Bot",               sym: "✓", info: "Prüfe deinen eigenen Bericht. Du bekommst Hinweise.", merksatz: "M3" }
+  ],
+
+  /* Namen der Fallen: [im Satz (Rückmeldung), im Ergebnis («Das übst du noch: …»)].
+     Modus 1 nutzt die Schlüssel in «fallen», Modus 4 die Art der Verbform. */
+  fallen: {
+    gefuehl:       ["ein Gefühl", "Gefühle"],
+    meinung:       ["eine Meinung oder Vermutung", "Meinungen und Vermutungen"],
+    uebertreibung: ["eine Übertreibung", "Übertreibungen"],
+    spannung:      ["Spannung wie in einer Erzählung", "Spannung wie in einer Erzählung"],
+    zeit:          ["eine falsche Zeitform (nicht Präteritum)", "die Zeitform: Präteritum statt Präsens oder Perfekt"],
+    ich:           ["die Ich- oder Wir-Form", "die Ich- oder Wir-Form"],
+    praes:         ["Präsens", "Präsens statt Präteritum"],
+    perf:          ["Perfekt", "Perfekt statt Präteritum"],
+    plusq:         ["was vorher passiert war", "Formen wie «hatte gerufen» (was vorher passiert war)"],
+    falsch:        ["eine falsche Form", "falsch gebildete Formen: Wie heisst das Verb im Präteritum?"]
+  },
+
+  /* ---------------------------------------------------------------------
+     MODUS 1 «Bericht oder Erzählung?»
+     bericht = der richtige Satz; andere = Sätze aus einer Erzählung;
+     fallen = je Satz in «andere» die Fallen (Schlüssel aus DATEN.fallen, gleiche
+              Reihenfolge wie «andere»): Rückmeldung zum gewählten Satz und
+              Fehlermuster im Ergebnis («Das übst du noch: …»);
+     tipp = Hilfe nach einem Fehlversuch; erklaerung = nach der Lösung.
+     --------------------------------------------------------------------- */
+  m1: {
+    auftrag: "Welcher Satz passt in einen Bericht? Tippe ihn an.",
+    A: [
+      { bericht: "Am Montag, 9. November, blieb der Lift im Schulhaus Bach stecken.",
+        andere: ["Ich drückte panisch auf alle Knöpfe.", "Der Lift bleibt stecken, und alle schreien laut."],
+        fallen: [["gefuehl", "ich"], ["zeit"]],
+        tipp: "Achte auf Gefühle und auf die Zeitform.",
+        erklaerung: "Der Bericht-Satz ist sachlich und im Präteritum. «Panisch» zeigt ein Gefühl. «Bleibt» und «schreien» stehen im Präsens." },
+      { bericht: "Am Freitagmorgen kletterte die Klasse 3b in der Kletterhalle Rosental.",
+        andere: ["Die Wand war mindestens hundert Meter hoch!", "Dario klettert ganz nach oben und jubelt."],
+        fallen: [["uebertreibung"], ["zeit"]],
+        tipp: "Achte auf Übertreibungen und auf die Zeitform.",
+        erklaerung: "Der Bericht-Satz nennt Wann, Wer und Wo. «Hundert Meter» ist übertrieben. «Klettert» und «jubelt» stehen im Präsens." },
+      { bericht: "Der Hauswart, Herr Meier, holte die Katze mit einer Leiter vom Dach.",
+        andere: ["Die arme Katze tat mir unendlich leid.", "Plötzlich miaut die Katze ganz laut."],
+        fallen: [["gefuehl", "ich"], ["zeit", "spannung"]],
+        tipp: "Achte auf Gefühle, Spannung und die Zeitform.",
+        erklaerung: "Der Bericht-Satz sagt Wer, Was und Wie. «Tat mir unendlich leid» ist ein Gefühl. «Miaut» steht im Präsens, «Plötzlich» macht Spannung." },
+      { bericht: "Das Dorffest in Rosental begann am Samstag um 14 Uhr.",
+        andere: ["Es war das beste Fest aller Zeiten!", "Ich freue mich schon jetzt auf nächstes Jahr."],
+        fallen: [["uebertreibung"], ["gefuehl", "ich", "zeit"]],
+        tipp: "Achte auf Übertreibungen und Gefühle.",
+        erklaerung: "Der Bericht-Satz nennt Wo und Wann. «Aller Zeiten» ist übertrieben. «Ich freue mich» ist ein Gefühl im Präsens." },
+      { bericht: "Zwölf Lernende übernachteten von Freitag auf Samstag in der Schulbibliothek.",
+        andere: ["Um Mitternacht hörten wir ein unheimliches Geräusch.", "Die Nacht ist total spannend."],
+        fallen: [["spannung", "ich"], ["zeit", "meinung"]],
+        tipp: "Achte auf Spannung und auf die Zeitform.",
+        erklaerung: "Der Bericht-Satz ist sachlich. «Unheimlich» macht Spannung wie in einer Erzählung. «Ist» steht im Präsens." },
+      { bericht: "Mia gewann das Tischtennis-Turnier in der Sporthalle Rosental mit 3 zu 1.",
+        andere: ["Mia spielte wie eine Weltmeisterin!", "Mia gewinnt, und ich juble laut."],
+        fallen: [["uebertreibung"], ["zeit", "gefuehl", "ich"]],
+        tipp: "Achte auf Übertreibungen und auf «ich».",
+        erklaerung: "Der Bericht-Satz nennt Wer, Wo und das Ergebnis. «Wie eine Weltmeisterin» ist übertrieben. «Gewinnt» steht im Präsens, «ich juble» zeigt ein Gefühl." },
+      { bericht: "Luan schliff am Dienstag in der Werkstatt ein Brett für einen Schrank ab.",
+        andere: ["Das Schleifen war voll langweilig.", "Luan schleift das Brett, und der Staub fliegt überall herum."],
+        fallen: [["meinung"], ["zeit"]],
+        tipp: "Achte auf Meinungen und auf die Zeitform.",
+        erklaerung: "Der Bericht-Satz ist sachlich und im Präteritum. «Voll langweilig» ist eine Meinung. «Schleift» und «fliegt» stehen im Präsens." },
+      { bericht: "In der Kita bastelte Sina mit vier Kindern Laternen aus Papier.",
+        andere: ["Die Laternen waren die schönsten der ganzen Welt!", "Die Kinder basteln fröhlich und lachen."],
+        fallen: [["uebertreibung"], ["zeit"]],
+        tipp: "Achte auf Übertreibungen und auf die Zeitform.",
+        erklaerung: "Der Bericht-Satz nennt Wo, Wer und Was. «Die schönsten der ganzen Welt» ist übertrieben. «Basteln» steht im Präsens." },
+      { bericht: "Im Alterszentrum spielten am Nachmittag sechs Bewohnerinnen und Bewohner Lotto.",
+        andere: ["Ich glaube, alle hatten furchtbare Langeweile.", "Elif ruft die Zahlen, und alle sind gespannt."],
+        fallen: [["meinung", "ich"], ["zeit"]],
+        tipp: "Achte auf Meinungen und auf die Zeitform.",
+        erklaerung: "Der Bericht-Satz nennt Tatsachen. «Ich glaube» zeigt eine Meinung. «Ruft» und «sind» stehen im Präsens." },
+      { bericht: "Die Klasse 3a spielte am Donnerstagabend ein Theater in der Aula.",
+        andere: ["Vor dem Auftritt zitterten meine Knie vor Angst.", "Das Publikum klatscht wie verrückt."],
+        fallen: [["gefuehl", "ich"], ["zeit", "uebertreibung"]],
+        tipp: "Achte auf Gefühle und auf die Zeitform.",
+        erklaerung: "Der Bericht-Satz nennt Wer, Wann, Was und Wo. «Vor Angst» ist ein Gefühl. «Klatscht wie verrückt» ist Präsens und übertrieben." },
+      { bericht: "Der Schulbus kam am Montag wegen eines Staus 20 Minuten zu spät.",
+        andere: ["Der Bus kommt sowieso nie pünktlich!", "Wir warteten ewig in der Kälte und froren schrecklich."],
+        fallen: [["meinung"], ["uebertreibung", "ich"]],
+        tipp: "Achte auf Meinungen und Übertreibungen.",
+        erklaerung: "Der Bericht-Satz nennt Wann, Warum und wie lange. «Nie pünktlich» ist eine Meinung. «Ewig» und «schrecklich» übertreiben." },
+      { bericht: "Am Samstag sammelte die Klasse 3b in Rosental Altpapier für die Klassenkasse.",
+        andere: ["Wir schleppten tausend schwere Bündel!", "Ich finde Altpapier sammeln total doof."],
+        fallen: [["uebertreibung", "ich"], ["meinung", "ich"]],
+        tipp: "Achte auf Übertreibungen und Meinungen.",
+        erklaerung: "Der Bericht-Satz nennt Wann, Wer, Wo und Warum. «Tausend Bündel» ist übertrieben. «Ich finde … doof» ist eine Meinung." }
+    ],
+    B: [
+      { bericht: "Weil die Linde beim Schulhaus Bach krank war, fällte der Forstdienst sie am Mittwochmorgen.",
+        andere: ["Leider fällte der Forstdienst am Mittwoch die schöne alte Linde beim Schulhaus Bach.",
+                 "Am Mittwoch hat der Forstdienst die kranke Linde beim Schulhaus Bach gefällt.",
+                 "Wir schauten vom Fenster aus zu, wie die Linde mit lautem Krachen umfiel."],
+        fallen: [["meinung"], ["zeit"], ["ich", "spannung"]],
+        tipp: "Prüfe jeden Satz einzeln: Gibt es eine Meinung, die Wir-Form oder eine falsche Zeitform?",
+        erklaerung: "Der Bericht-Satz nennt Warum, Wer, Wann und Wo im Präteritum. «Leider» und «schöne» sind Meinungen, «hat gefällt» ist Perfekt. «Wir schauten zu» gehört in eine Erzählung." },
+      { bericht: "Ein Lieferwagen blockierte am Montag eine Stunde lang die Einfahrt zur Sporthalle Rosental.",
+        andere: ["Ein Lieferwagen blockierte am Montag rücksichtslos die Einfahrt zur Sporthalle Rosental.",
+                 "Ein Lieferwagen blockiert am Montag eine Stunde lang die Einfahrt zur Sporthalle Rosental.",
+                 "Ein riesiger Lieferwagen versperrte stundenlang die ganze Einfahrt zur Sporthalle."],
+        fallen: [["meinung"], ["zeit"], ["uebertreibung"]],
+        tipp: "Die Sätze sehen fast gleich aus. Vergleiche Wort für Wort und achte auf die Zeitform.",
+        erklaerung: "Der Bericht-Satz ist genau: «eine Stunde lang». «Rücksichtslos» ist eine Meinung, «blockiert» steht im Präsens. «Riesig» und «stundenlang» übertreiben." },
+      { bericht: "Während seiner Schnupperwoche als Elektroinstallateur zog Noah mit einem Monteur Kabel in einem Neubau.",
+        andere: ["Noah schnupperte als Elektroinstallateur, was natürlich der beste Beruf überhaupt ist.",
+                 "In der Schnupperwoche ist Noah jeden Tag mit einem Monteur in einen Neubau gefahren.",
+                 "Ich durfte in meiner Schnupperwoche endlich richtige Kabel ziehen!"],
+        fallen: [["meinung"], ["zeit"], ["ich", "gefuehl"]],
+        tipp: "Ein Bericht sagt, was jemand gemacht hat. Er sagt nicht, wie toll es war.",
+        erklaerung: "Der Bericht-Satz nennt Wann, Wer, Was und Wo im Präteritum. «Natürlich der beste Beruf» ist eine Meinung, «ist gefahren» ist Perfekt. «Ich», «endlich» und das Ausrufezeichen zeigen Gefühle." },
+      { bericht: "Am Donnerstagnachmittag begleitete Sina sechs Kinder aus der Kita zu Fuss in die Ludothek.",
+        andere: ["Am Donnerstag begleitete Sina sechs Kinder, die wie immer viel zu laut waren, in die Ludothek.",
+                 "Sina begleitet am Donnerstag sechs Kinder aus der Kita zu Fuss in die Ludothek.",
+                 "Sina dachte bestimmt, dass der Ausflug in die Ludothek ein Abenteuer für die Kinder wird."],
+        fallen: [["meinung"], ["zeit"], ["meinung"]],
+        tipp: "Ein Bericht nennt nur, was sicher passiert ist. Achte auf Meinungen, Vermutungen und die Zeitform.",
+        erklaerung: "Der Bericht-Satz nennt Wann, Wer, Wie und Wo. «Wie immer viel zu laut» ist eine Meinung, «begleitet» steht im Präsens. «Dachte bestimmt» ist eine Vermutung: Niemand weiss, was Sina dachte." },
+      { bericht: "Im Alterszentrum Rosental organisierte Elif am Freitag einen Jassnachmittag, an dem acht Personen teilnahmen.",
+        andere: ["Elif organisierte einen Jassnachmittag, der für alle bestimmt der schönste Tag der Woche war.",
+                 "Am Freitag hat Elif im Alterszentrum Rosental einen Jassnachmittag organisiert.",
+                 "Elif organisiert am Freitag einen Jassnachmittag, und acht Personen machen mit."],
+        fallen: [["meinung"], ["zeit"], ["zeit"]],
+        tipp: "Zwei Sätze stehen nicht im Präteritum. Einer enthält eine Vermutung.",
+        erklaerung: "Der Bericht-Satz nennt Wo, Wer, Wann, Was und wie viele Personen. «Bestimmt der schönste Tag» ist eine Vermutung. «Hat organisiert» ist Perfekt, «organisiert» und «machen mit» sind Präsens." },
+      { bericht: "Nachdem Luan die Bretter zugeschnitten hatte, schraubte er die neue Sitzbank für den Pausenplatz zusammen.",
+        andere: ["Luan schraubte die neue Sitzbank zusammen, die natürlich viel schöner als die alte aussah.",
+                 "Nachdem Luan die Bretter zugeschnitten hat, schraubt er die Sitzbank für den Pausenplatz zusammen.",
+                 "Luan schuftete den ganzen Tag wie verrückt an der neuen Sitzbank."],
+        fallen: [["meinung"], ["zeit"], ["uebertreibung"]],
+        tipp: "Ein Satz darf zwei Zeitformen haben: «nachdem … hatte» zeigt, was vorher passiert war.",
+        erklaerung: "Im Bericht-Satz zeigt «hatte zugeschnitten», was vorher war, und «schraubte» steht im Präteritum. «Natürlich viel schöner» ist eine Meinung. «Hat zugeschnitten» und «schraubt» sind falsche Zeitformen." },
+      { bericht: "Am Dienstag besuchte die Klasse 3b das Dorfmuseum Rosental, wo ein Führer alte Werkzeuge zeigte.",
+        andere: ["Am Dienstag besuchte die Klasse 3b das Dorfmuseum, das leider ziemlich langweilig war.",
+                 "Im Dorfmuseum Rosental zeigt ein Führer der Klasse 3b am Dienstag alte Werkzeuge.",
+                 "Wir bestaunten im Dorfmuseum Werkzeuge, die mindestens tausend Jahre alt waren."],
+        fallen: [["meinung"], ["zeit"], ["ich", "uebertreibung"]],
+        tipp: "Achte auf Wörter, die eine Meinung zeigen, auf die Wir-Form und auf Übertreibungen.",
+        erklaerung: "Der Bericht-Satz nennt Wann, Wer, Wo und Was im Präteritum. «Leider ziemlich langweilig» ist eine Meinung, «zeigt» steht im Präsens. «Wir» und «tausend Jahre» gehören nicht in einen Bericht." },
+      { bericht: "Auf der Industriestrasse in Rosental verlor ein Lastwagen am Montagabend einen Teil seiner Ladung Kies.",
+        andere: ["Ein Lastwagen verlor auf der Industriestrasse Kies, weil der Fahrer sicher nicht aufgepasst hatte.",
+                 "Auf der Industriestrasse verliert ein Lastwagen am Montagabend einen Teil seiner Ladung.",
+                 "Überall auf der Strasse lagen Berge von Kies, und kein Auto kam mehr durch."],
+        fallen: [["meinung"], ["zeit"], ["uebertreibung"]],
+        tipp: "Achte auf Vermutungen wie «sicher» oder «bestimmt» und auf Übertreibungen.",
+        erklaerung: "Der Bericht-Satz nennt Wo, Wer, Wann und Was genau. «Weil der Fahrer sicher nicht aufgepasst hatte» ist eine Vermutung, «verliert» steht im Präsens. «Überall» und «Berge von Kies» übertreiben." },
+      { bericht: "Weil Wespen ins Schulzimmer flogen, entfernte Herr Meier am Donnerstag ein Nest unter dem Dach.",
+        andere: ["Herr Meier entfernte mutig das gefährliche Nest, und wir waren alle sehr erleichtert.",
+                 "Weil Wespen ins Schulzimmer fliegen, entfernt Herr Meier am Donnerstag ein Nest unter dem Dach.",
+                 "Herr Meier hat am Donnerstag ein Wespennest unter dem Dach entfernt."],
+        fallen: [["meinung", "gefuehl", "ich"], ["zeit"], ["zeit"]],
+        tipp: "Zwei Sätze haben eine falsche Zeitform. Ein Satz zeigt Gefühle.",
+        erklaerung: "Der Bericht-Satz nennt Warum, Wer, Wann, Was und Wo im Präteritum. «Mutig» ist eine Meinung, «wir waren erleichtert» ein Gefühl. «Fliegen» und «entfernt» sind Präsens, «hat entfernt» ist Perfekt." },
+      { bericht: "Am Samstag führte der Samariterverein Rosental für zehn Lernende einen Erste-Hilfe-Kurs durch, der sechs Stunden dauerte.",
+        andere: ["Der Erste-Hilfe-Kurs am Samstag war viel zu lang, aber trotzdem ziemlich wichtig.",
+                 "Am Samstag führt der Samariterverein Rosental für zehn Lernende einen Erste-Hilfe-Kurs durch.",
+                 "Ich übte so lange an der Puppe, bis mir fast die Arme abfielen."],
+        fallen: [["meinung"], ["zeit"], ["ich", "uebertreibung"]],
+        tipp: "Ein Bericht nennt Tatsachen: wer, wann, wie lange. Achte auf Meinungen, die Ich-Form und die Zeitform.",
+        erklaerung: "Der Bericht-Satz nennt Wann, Wer, Was und die Dauer. «Viel zu lang» ist eine Meinung, «führt durch» steht im Präsens. «Ich» und «fast die Arme abfielen» gehören in eine Erzählung." },
+      { bericht: "Die Gemeinde Rosental eröffnete am Sonntag den neuen Skatepark, den Jugendliche mitgeplant hatten.",
+        andere: ["Die Gemeinde eröffnete am Sonntag den neuen Skatepark, der endlich genug Platz bietet.",
+                 "Am Sonntag hat die Gemeinde Rosental den neuen Skatepark eröffnet.",
+                 "Hunderte von begeisterten Jugendlichen stürmten am Sonntag den neuen Skatepark."],
+        fallen: [["meinung"], ["zeit"], ["uebertreibung"]],
+        tipp: "Achte auf Wörter wie «endlich», auf Übertreibungen und auf die Zeitform.",
+        erklaerung: "Der Bericht-Satz nennt Wer, Wann und Was im Präteritum. «Endlich» ist eine Meinung, «hat eröffnet» ist Perfekt. «Hunderte» und «begeistert» übertreiben." },
+      { bericht: "Für die Inventur zählte Jonas am Samstag mit seiner Chefin alle Schuhe im Sportgeschäft.",
+        andere: ["Für die Inventur zählte Jonas am Samstag die Schuhe, was eine ziemlich sinnlose Arbeit ist.",
+                 "Jonas zählt für die Inventur am Samstag alle Schuhe im Sportgeschäft.",
+                 "Jonas zählte am Samstag bestimmt eine Million Schuhe."],
+        fallen: [["meinung"], ["zeit"], ["uebertreibung"]],
+        tipp: "Vergleiche die Sätze genau: Wo steckt eine Meinung, wo eine falsche Zeitform, wo eine Übertreibung?",
+        erklaerung: "Der Bericht-Satz nennt Warum, Wer, Wann, Was und Wo. «Ziemlich sinnlos» ist eine Meinung, «zählt» steht im Präsens. «Eine Million» ist übertrieben." }
+    ]
+  },
+
+  /* ---------------------------------------------------------------------
+     MODUS 2 «W-Fragen finden»
+     teile: ["Text", "W-Frage"] = antippbarer Satzteil; ["Text"] = normaler Text;
+     ["Text", "Was?", 1] = Teil einer Gruppe (siehe Regel «Was?» unten).
+     knoepfe: welche W-Fragen als Knöpfe erscheinen.
+     --------------------------------------------------------------------- */
+  m2: {
+    auftrag: "Tippe auf einen Satzteil. Wähle dann die passende W-Frage.",
+    knoepfe: { A: ["Wer?", "Was?", "Wann?", "Wo?", "Wie?", "Warum?"], B: ["Wer?", "Was?", "Wann?", "Wo?", "Wie?", "Warum?"] },
+    /* Regel «Was?» (wie in den Lösungen von LK und FLK):
+       Was? = was jemand gemacht hat oder was passiert ist. Das Verb gehört immer dazu,
+       oft auch ein Ding. Stehen Verb und Ding getrennt, bekommen beide Teile dieselbe
+       Gruppennummer als 3. Eintrag: ["putzte", "Was?", 1], ["den Schulhof", "Was?", 1].
+       Die App markiert dann beide Teile zusammen; sie zählen als EIN Satzteil. */
+    hilfe: {
+      "Wer?":   "Dieser Satzteil nennt eine Person oder eine Gruppe. Sie macht etwas.",
+      "Was?":   "Dieser Satzteil sagt, was jemand gemacht hat oder was passiert ist. Das Verb gehört immer dazu.",
+      "Wann?":  "Dieser Satzteil sagt, wann etwas passiert ist: Tag, Monat, Uhrzeit oder «nachdem …».",
+      "Wo?":    "Dieser Satzteil nennt einen Ort.",
+      "Wie?":   "Dieser Satzteil sagt, wie oder womit etwas passiert ist.",
+      "Warum?": "Dieser Satzteil nennt einen Grund: weil, denn, wegen, damit, für, um … zu."
+    },
+    /* Gestufte Hilfe: 1. Fehlversuch = Frage zur GEWÄHLTEN W-Frage (hilfeFalsch, {teil} = Satzteil),
+       2. Fehlversuch = Tipp zur richtigen W-Frage (hilfe), ab dem 3. Fehlversuch = Lösung. */
+    hilfeFalsch: {
+      "Wer?":   "«Wer?» fragt nach einer Person oder einer Gruppe. Ist «{teil}» eine Person?",
+      "Was?":   "«Was?» fragt, was jemand gemacht hat oder was passiert ist (das Verb, oft mit einem Ding). Sagt «{teil}», was passiert ist?",
+      "Wann?":  "«Wann?» fragt nach einer Zeit. Nennt «{teil}» einen Tag, eine Uhrzeit oder einen Zeitpunkt?",
+      "Wo?":    "«Wo?» fragt nach einem Ort. Ist «{teil}» ein Ort?",
+      "Wie?":   "«Wie?» fragt, wie oder womit etwas passiert ist. Sagt «{teil}», wie oder womit?",
+      "Warum?": "«Warum?» fragt nach einem Grund. Nennt «{teil}» einen Grund?"
+    },
+    A: [
+      { teile: [["Am Dienstag", "Wann?"], ["reparierte", "Was?", 1], ["Herr Brunner", "Wer?"], ["die Heizung", "Was?", 1], ["im Schulhaus Bach", "Wo?"], [","], ["weil es kalt war", "Warum?"], ["."]] },
+      { teile: [["Elif", "Wer?"], ["spielte Gitarre", "Was?"], ["im Alterszentrum", "Wo?"], [","], ["denn eine Bewohnerin hatte Geburtstag", "Warum?"], ["."]] },
+      { teile: [["Am Montag", "Wann?"], ["putzte", "Was?", 1], ["die Klasse 3a", "Wer?"], ["den Schulhof", "Was?", 1], ["mit Besen und Zangen", "Wie?"], ["."]] },
+      { teile: [["Noah", "Wer?"], ["fand einen Schlüssel", "Was?"], ["auf dem Pausenplatz", "Wo?"], ["und"], ["brachte ihn sofort zum Hauswart", "Was?"], ["."]] },
+      { teile: [["Am Freitag", "Wann?"], ["kletterte", "Was?", 1], ["Lara", "Wer?"], ["mit Seil und Helm", "Wie?"], ["eine Route", "Was?", 1], ["in der Kletterhalle Rosental", "Wo?"], ["."]] },
+      { teile: [["Wegen einer Reparatur", "Warum?"], ["begann", "Was?", 1], ["das Tischtennis-Turnier", "Was?", 1], ["erst um 10 Uhr", "Wann?"], ["."]] },
+      { teile: [["Frau Keller", "Wer?"], ["öffnete die Bibliothek", "Was?"], ["am Samstag", "Wann?"], ["für eine Lesenacht", "Warum?"], ["."]] },
+      { teile: [["Im Oktober", "Wann?"], ["gewann", "Was?", 1], ["Mia", "Wer?"], ["einen Preis", "Was?", 1], ["mit einem Bild von Rosental", "Wie?"], ["."]] },
+      { teile: [["Jonas", "Wer?"], ["schnupperte als Maurer", "Was?"], ["auf einer Baustelle", "Wo?"], [","], ["weil er gern draussen arbeitete", "Warum?"], ["."]] },
+      { teile: [["Am Samstag", "Wann?"], ["half", "Was?", 1], ["Dario", "Wer?"], ["seiner Tante beim Umzug", "Was?", 1], [","], ["denn sie hatte eine neue Wohnung", "Warum?"], ["."]] },
+      { teile: [["Am Mittwoch", "Wann?"], ["bastelte", "Was?", 1], ["Sina", "Wer?"], ["in der Kita", "Wo?"], ["Laternen", "Was?", 1], ["aus Papier und Leim", "Wie?"], ["."]] },
+      { teile: [["Luan", "Wer?"], ["baute ein Regal", "Was?"], ["in der Werkstatt", "Wo?"], ["nach einem genauen Plan", "Wie?"], ["."]] }
+    ],
+    B: [
+      { teile: [["Am Mittwochmorgen", "Wann?"], ["fällte", "Was?", 1], ["der Forstdienst", "Wer?"], ["eine kranke Linde", "Was?", 1], ["beim Schulhaus Bach", "Wo?"], ["mit einer Motorsäge", "Wie?"], [","], ["weil Äste herunterzufallen drohten", "Warum?"], ["."]] },
+      { teile: [["Weil der Warenlift defekt war", "Warum?"], [","], ["trugen", "Was?", 1], ["Jonas und Luan", "Wer?"], ["am Montag", "Wann?"], ["die neuen Stühle", "Was?", 1], ["einzeln", "Wie?"], ["in den dritten Stock", "Wo?"], ["."]] },
+      { teile: [["Noah", "Wer?"], ["installierte", "Was?", 1], ["während seiner Schnupperwoche", "Wann?"], ["unter Aufsicht eines Monteurs", "Wie?"], ["in einem Neubau", "Wo?"], ["mehrere Steckdosen", "Was?", 1], [","], ["weil er Elektroinstallateur werden wollte", "Warum?"], ["."]] },
+      { teile: [["Sina", "Wer?"], ["begleitete", "Was?", 1], ["am Donnerstagnachmittag", "Wann?"], ["sechs Kinder aus der Kita", "Was?", 1], ["zu Fuss", "Wie?"], ["in die Ludothek", "Wo?"], [","], ["damit sie neue Spiele ausprobieren konnten", "Warum?"], ["."]] },
+      { teile: [["Im Alterszentrum", "Wo?"], ["spielten", "Was?", 1], ["acht Bewohnerinnen und Bewohner", "Wer?"], ["am Freitag", "Wann?"], ["mit grossen Karten", "Wie?"], ["einen Jass", "Was?", 1], [","], ["weil die normalen zu klein waren", "Warum?"], ["."]] },
+      { teile: [["Nachdem er die Bretter zugeschnitten hatte", "Wann?"], [","], ["schraubte", "Was?", 1], ["Luan", "Wer?"], ["in der Werkstatt", "Wo?"], ["mit einem Akkuschrauber", "Wie?"], ["die Sitzbank für den Pausenplatz", "Was?", 1], ["zusammen", "Was?", 1], ["."]] },
+      { teile: [["Am Dienstag", "Wann?"], ["zeigte", "Was?", 1], ["ein Führer", "Wer?"], ["im Dorfmuseum Rosental", "Wo?"], ["alte Werkzeuge", "Was?", 1], ["mit kurzen Vorführungen", "Wie?"], [","], ["denn die Klasse 3b behandelte alte Berufe", "Warum?"], ["."]] },
+      { teile: [["Wegen einer schlecht verschlossenen Klappe", "Warum?"], ["verlor", "Was?", 1], ["ein Lastwagenfahrer", "Wer?"], ["am Montagabend", "Wann?"], ["auf der Industriestrasse", "Wo?"], ["nach und nach", "Wie?"], ["seine Ladung Kies", "Was?", 1], ["."]] },
+      { teile: [["Herr Meier", "Wer?"], ["entfernte", "Was?", 1], ["am Donnerstag", "Wann?"], ["mit Schutzanzug und Handschuhen", "Wie?"], ["ein Wespennest", "Was?", 1], ["unter dem Dach", "Wo?"], [","], ["weil Wespen ins Schulzimmer geflogen waren", "Warum?"], ["."]] },
+      { teile: [["Am Samstag", "Wann?"], ["übten", "Was?", 1], ["zehn Lernende", "Wer?"], ["beim Samariterverein Rosental", "Wo?"], ["mit einer Übungspuppe", "Wie?"], ["die Herzmassage", "Was?", 1], [","], ["um im Notfall richtig helfen zu können", "Warum?"], ["."]] },
+      { teile: [["Am Sonntag", "Wann?"], ["eröffnete", "Was?", 1], ["die Gemeinde", "Wer?"], ["den neuen Skatepark", "Was?", 1], ["beim Schulhaus Bach", "Wo?"], ["mit einer kurzen Rede", "Wie?"], [","], ["weil Jugendliche ihn gewünscht hatten", "Warum?"], ["."]] },
+      { teile: [["Für die Inventur", "Warum?"], ["zählte", "Was?", 1], ["Jonas", "Wer?"], ["am letzten Samstag im Oktober", "Wann?"], ["mit einem Handscanner", "Wie?"], ["alle Schuhe", "Was?", 1], ["im Sportgeschäft", "Wo?"], ["."]] }
+    ]
+  },
+
+  /* ---------------------------------------------------------------------
+     MODUS 3 «Anleitung ordnen»
+     schritte in der RICHTIGEN Reihenfolge eintragen; die App mischt sie.
+     schritt1Vorgegeben: true = Schritt 1 steht schon da (Musterhilfe).
+     Seit Loop 2 (13.10.2026): Version A an (sicherer Start für ●), Version B aus
+     (A 5 bis 6, B 6 bis 7 Schritte).
+     --------------------------------------------------------------------- */
+  m3: {
+    auftrag: "Tippe die Schritte der Reihe nach an.",
+    schritt1Vorgegeben: { A: true, B: false },
+    A: [
+      { titel: "So wäschst du deine Hände", schritte: ["Mach die Hände mit Wasser nass.", "Nimm etwas Seife.", "Reibe die Hände 30 Sekunden lang ein.", "Spüle die Seife gründlich ab.", "Trockne die Hände mit einem Papiertuch ab.", "Wirf das Papiertuch in den Abfall."],
+        erklaerung: "Seife schäumt nur auf nassen Händen. Abtrocknen kommt nach dem Abspülen." },
+      { titel: "So nähst du einen Knopf an", schritte: ["Schneide etwa 50 cm Faden ab.", "Fädle den Faden in die Nadel ein.", "Mach am Ende vom Faden einen Knoten.", "Stich von hinten durch den Stoff und den Knopf.", "Nähe etwa sechsmal durch die Löcher.", "Verknote den Faden zum Schluss auf der Rückseite."],
+        erklaerung: "Ohne Knoten rutscht der Faden durch. Am Schluss verknotest du auf der Rückseite." },
+      { titel: "So schleifst du ein Brett ab", schritte: ["Spanne das Brett fest ein.", "Schleife zuerst mit grobem Schleifpapier.", "Schleife danach mit feinem Schleifpapier.", "Wisch den Staub mit einem Tuch ab.", "Öle das Brett zum Schluss ein."],
+        erklaerung: "Die Reihenfolgewörter helfen: zuerst grob, danach fein, zum Schluss ölen." },
+      { titel: "So bewirbst du dich für eine Schnupperlehre", schritte: ["Such eine passende Firma im Internet.", "Ruf die Firma an und frag nach einer Schnupperlehre.", "Schreib eine kurze Bewerbung.", "Leg deinen Lebenslauf dazu.", "Schick die Bewerbung ab.", "Geh pünktlich an den Schnuppertag."],
+        erklaerung: "Erst fragst du nach. Dann schickst du Bewerbung und Lebenslauf. Der Schnuppertag kommt zuletzt." },
+      { titel: "So packst du ein Geschenk ein", schritte: ["Miss das Papier am Geschenk ab.", "Schneide das Papier zu.", "Leg das Geschenk in die Mitte.", "Falte die langen Seiten darüber und klebe sie fest.", "Falte die Enden ein und klebe sie fest.", "Bind zum Schluss eine Schleife darum."],
+        erklaerung: "Zuerst messen und schneiden. Die Schleife kommt zum Schluss." },
+      { titel: "So kopierst du ein Blatt", schritte: ["Öffne den Deckel vom Kopierer.", "Leg das Blatt mit der Schrift nach unten auf das Glas.", "Schliess den Deckel.", "Drück auf «Start».", "Nimm zum Schluss das Blatt und die Kopien heraus."],
+        erklaerung: "Der Deckel muss zu sein, bevor du startest. Das Blatt nimmst du am Schluss mit." },
+      { titel: "So schreibst du eine E-Mail", schritte: ["Tippe auf «Neue Nachricht».", "Gib die Adresse der Person ein.", "Schreib einen kurzen Betreff.", "Schreib eine Anrede, den Text und einen Gruss.", "Lies alles noch einmal durch.", "Tippe auf «Senden»."],
+        erklaerung: "Du füllst die Felder von oben nach unten aus. Vor dem Senden liest du alles durch." },
+      { titel: "So löst du ein Billett am Automaten", schritte: ["Tippe auf «Billett kaufen».", "Gib dein Ziel ein.", "Wähle einfach oder retour.", "Bezahle mit Karte oder Münzen.", "Nimm das Billett heraus."],
+        erklaerung: "Erst wählst du Ziel und Billett. Dann bezahlst du. Das Billett kommt zum Schluss." },
+      { titel: "So bündelst du Altpapier", schritte: ["Leg zwei Schnüre kreuzweise auf den Boden.", "Staple das Papier in die Mitte.", "Zieh die Schnüre nach oben.", "Mach einen festen Knoten.", "Stell das Bündel am Sammeltag an die Strasse."],
+        erklaerung: "Die Schnüre liegen zuerst unten. Der Knoten hält das Bündel zusammen." },
+      { titel: "So wechselst du eine Glühbirne", schritte: ["Schalte das Licht aus.", "Warte, bis die alte Birne kalt ist.", "Dreh die alte Birne heraus.", "Dreh die neue Birne fest hinein.", "Schalte das Licht zum Test ein."],
+        erklaerung: "Zuerst das Licht aus. Das ist wichtig für die Sicherheit. Der Test kommt zum Schluss." },
+      { titel: "So putzt du die Wandtafel", schritte: ["Nimm alle Blätter und Magnete weg.", "Wisch die Kreide trocken weg.", "Mach den Schwamm nass und drück ihn aus.", "Wisch die Tafel von oben nach unten ab.", "Zieh das Wasser mit dem Abzieher ab.", "Spüle zum Schluss den Schwamm aus."],
+        erklaerung: "Zuerst muss die Tafel frei sein. Dann trocken, dann nass putzen." },
+      { titel: "So pumpst du einen Ball auf", schritte: ["Steck die Nadel auf die Pumpe.", "Steck die Nadel ins Ventil vom Ball.", "Pumpe Luft in den Ball.", "Zieh die Nadel heraus.", "Versorge die Pumpe im Schrank."],
+        erklaerung: "Die Nadel muss im Ventil stecken. Erst dann kommt Luft in den Ball." }
+    ],
+    B: [
+      { titel: "So reinigst du einen Pinsel nach dem Malen", schritte: ["Streif die restliche Farbe am Rand des Farbtopfs ab.", "Halte den Pinsel unter lauwarmes Wasser.", "Gib einen Tropfen Seife auf die nassen Borsten.", "Massiere die Seife ein, bis keine Farbe mehr herauskommt.", "Spül die Seife vollständig aus.", "Forme die Borsten mit den Fingern wieder spitz.", "Leg den Pinsel zum Trocknen flach auf ein Tuch."],
+        erklaerung: "Zuerst entfernst du die grobe Farbe. Seife kommt erst auf die nassen Borsten. Die Spitze formst du, wenn die Seife ausgespült ist. Trocknen kommt zuletzt." },
+      { titel: "So hilfst du einer Bewohnerin in den Rollstuhl", schritte: ["Stell den Rollstuhl direkt neben das Bett.", "Zieh auf beiden Seiten die Bremsen an, damit der Rollstuhl nicht wegrollt.", "Klapp die Fussstützen nach oben, sobald der Rollstuhl sicher steht.", "Hilf der Bewohnerin, sich langsam in den Rollstuhl zu setzen.", "Klapp die Fussstützen herunter und stell ihre Füsse darauf.", "Löse die Bremsen erst, wenn die Füsse sicher stehen.", "Schieb den Rollstuhl langsam los."],
+        erklaerung: "Der Rollstuhl muss am richtigen Platz stehen und gebremst sein, bevor sich jemand hineinsetzt. Die Bremsen löst du erst, wenn die Füsse auf den Stützen stehen." },
+      { titel: "So putzt du Lederschuhe", schritte: ["Zieh die Schnürsenkel heraus.", "Bürste den groben Schmutz trocken ab.", "Wisch die Schuhe mit einem feuchten Tuch sauber.", "Lass die Schuhe trocknen, bevor du Schuhcreme nimmst.", "Trag die Schuhcreme mit einem Lappen dünn auf.", "Poliere die Schuhe mit einer weichen Bürste, sobald die Creme eingezogen ist.", "Fädle die Schnürsenkel wieder ein, die du am Anfang herausgezogen hast."],
+        erklaerung: "Der Schmutz kommt zuerst trocken, dann feucht weg. Die Creme kommt nur auf trockene Schuhe. Polieren kannst du erst, wenn die Creme eingezogen ist." },
+      { titel: "So bohrst du ein Loch in ein Brett", schritte: ["Zeichne die Stelle für das Loch mit einem Bleistift an.", "Leg das angezeichnete Brett auf ein Restholz, damit der Werktisch keine Löcher bekommt.", "Spann Brett und Restholz mit einer Zwinge am Werktisch fest.", "Setz die Schutzbrille auf und schalte erst dann die Bohrmaschine ein.", "Setz den Bohrer auf die Markierung und bohre langsam, bis du im Restholz bist.", "Schalte die Maschine aus und wisch die Späne mit einem Pinsel weg."],
+        erklaerung: "Erst anzeichnen, dann unterlegen und festspannen. Die Schutzbrille trägst du, bevor die Maschine läuft. Das Restholz schützt den Werktisch." },
+      { titel: "So wäschst du dunkle Kleider in der Waschmaschine", schritte: ["Sortiere die Wäsche nach hellen und dunklen Farben.", "Leere bei den dunklen Kleidern alle Taschen aus.", "Leg die dunkle Wäsche in die Trommel.", "Schliess die Tür und füll Waschmittel in das Fach.", "Wähle das Programm für 40 Grad und drück auf «Start».", "Häng die Wäsche auf, sobald das Programm fertig ist."],
+        erklaerung: "Zuerst sortierst du, dann leerst du die Taschen der dunklen Kleider. Die Tür schliesst du, wenn die Wäsche drin ist. Aufhängen kommt nach dem Programm." },
+      { titel: "So verschickst du ein Paket", schritte: ["Leg den Gegenstand in eine passende Schachtel.", "Füll die Lücken mit zerknülltem Zeitungspapier, damit nichts verrutscht.", "Kleb die Schachtel mit Klebeband gut zu.", "Schreib die Adresse und deinen Absender auf das zugeklebte Paket.", "Bring das Paket an den Postschalter und lass es wägen.", "Bezahle das Porto und bewahre die Quittung mit der Sendungsnummer auf."],
+        erklaerung: "Zuerst packst du ein und füllst die Lücken. Die Adresse schreibst du auf das zugeklebte Paket. Bezahlen kannst du erst, wenn das Paket gewogen ist." },
+      { titel: "So wechselst du den Beutel im Staubsauger", schritte: ["Zieh den Stecker aus der Steckdose.", "Öffne den Deckel des Staubsaugers.", "Nimm den vollen Beutel heraus und wirf ihn in den Abfall.", "Steck einen neuen Beutel fest in die leere Halterung.", "Schliess den Deckel, bis er hörbar einrastet.", "Steck den Stecker wieder ein und mach einen kurzen Test."],
+        erklaerung: "Zuerst ziehst du den Stecker. Das ist wichtig für die Sicherheit. Der neue Beutel kommt erst in die Halterung, wenn der alte draussen ist." },
+      { titel: "So fotografierst du ein Arbeitsblatt für dein Portfolio", schritte: ["Leg das Blatt auf einen hellen Tisch und öffne die Kamera auf dem iPad.", "Halte das iPad genau waagrecht über das Blatt.", "Prüfe, ob das ganze Blatt auf dem Bildschirm zu sehen ist.", "Tippe auf den Auslöser.", "Schneide das Foto zu, bis nur noch das Blatt zu sehen ist.", "Speichere das Foto im Ordner «Portfolio»."],
+        erklaerung: "Bevor du auslöst, prüfst du, ob das ganze Blatt zu sehen ist. Zuschneiden kannst du erst nach dem Foto. Speichern kommt zum Schluss." },
+      { titel: "So sägst du ein Brett mit der Handsäge", schritte: ["Miss die gewünschte Länge mit dem Meter ab.", "Zieh mit Winkel und Bleistift eine gerade Linie.", "Spann das Brett so ein, dass die Linie über den Werktisch hinausragt.", "Setz die Säge neben der Linie an und zieh sie ein paarmal vorsichtig zurück.", "Säge mit ruhigen, langen Zügen weiter.", "Halte kurz vor dem Ende das Reststück fest, damit es nicht abbricht.", "Schleife die Schnittkante mit Schleifpapier glatt."],
+        erklaerung: "Erst messen, dann die Linie ziehen. Die Säge setzt du an der Linie an. Das Reststück hältst du kurz vor dem Ende fest. Schleifen kommt nach dem Sägen." },
+      { titel: "So spülst du Geschirr von Hand", schritte: ["Kratz die Essensreste ab und lass dann heisses Wasser ins Spülbecken laufen.", "Gib einen Spritzer Spülmittel ins Wasser.", "Wasch zuerst die Gläser, weil sie am wenigsten schmutzig sind.", "Wasch danach die Teller und das Besteck.", "Wasch zum Schluss die Pfannen, weil sie am schmutzigsten sind.", "Trockne alles ab und räum es in den Schrank."],
+        erklaerung: "Du spülst vom saubersten zum schmutzigsten Geschirr: zuerst Gläser, danach Teller und Besteck, zum Schluss Pfannen. Abtrocknen kommt nach dem Waschen." },
+      { titel: "So mischst du Mörtel im Kessel", schritte: ["Zieh Handschuhe und eine Schutzbrille an.", "Füll etwas Wasser in den leeren Kessel.", "Schütte den Trockenmörtel langsam dazu.", "Rühr alles mit dem Rührwerk, bis keine Klumpen mehr da sind.", "Lass den Mörtel fünf Minuten ruhen.", "Rühr ihn noch einmal kurz durch, bevor du ihn verwendest.", "Reinige Rührwerk und Kessel sofort mit Wasser."],
+        erklaerung: "Der Schutz kommt zuerst. Das Wasser kommt in den leeren Kessel, dann der Mörtel. Nach dem Ruhen rührst du noch einmal. Reinigen kommt zuletzt." },
+      { titel: "So liest du Kindern in der Kita ein Bilderbuch vor", schritte: ["Such ein Buch aus, das zum Alter der Kinder passt.", "Lies das Buch vorher einmal allein durch.", "Setz dich so hin, dass alle Kinder die Bilder sehen.", "Zeig das Titelbild und frag, worum es wohl geht.", "Lies langsam vor und zeig nach jeder Seite das Bild.", "Sprich am Ende mit den Kindern über die Geschichte."],
+        erklaerung: "Zuerst wählst du ein Buch und liest es allein. Mit den Kindern beginnst du beim Titelbild. Das Gespräch kommt am Ende." }
+    ]
+  },
+
+  /* ---------------------------------------------------------------------
+     MODUS 4 «Präteritum»
+     satz mit ___ als Lücke; optionen: [Form, Art] oder [Form, Art, "eigene Rückmeldung"]
+     Art: "praet" = richtig, "praes" = Präsens, "perf" = Perfekt,
+          "plusq" = Plusquamperfekt (nur LP-Begriff; auf dem Bildschirm «was vorher passiert war»),
+          "falsch" = diese Form gibt es nicht (oder passt nicht, dann mit eigener Rückmeldung).
+     Seit Loop 2 keine Möglichkeitsform mehr (in der Einheit nicht behandelt).
+     --------------------------------------------------------------------- */
+  m4: {
+    auftrag: "Welche Verbform passt in einen Bericht? Tippe sie an.",
+    A: [
+      { satz: "Am Dienstag ___ der Lift im Schulhaus Bach stecken.", grundform: "bleiben", optionen: [["blieb", "praet"], ["bleibt", "praes"], ["bleibte", "falsch"]] },
+      { satz: "Ein Mann ___ über die Strasse zum Bus.", grundform: "rennen", optionen: [["rannte", "praet"], ["rennt", "praes"], ["rennte", "falsch"]] },
+      { satz: "Herr Brunner ___ den Schaden sofort der Polizei.", grundform: "melden", optionen: [["meldete", "praet"], ["meldet", "praes"], ["hat gemeldet", "perf"]] },
+      { satz: "Die Katze ___ vom Dach in den Garten.", grundform: "springen", optionen: [["sprang", "praet"], ["springt", "praes"], ["springte", "falsch"]] },
+      { satz: "Sina ___ den Eltern einen Zettel mit.", grundform: "mitgeben", optionen: [["gab", "praet"], ["gibt", "praes"], ["gebte", "falsch"]] },
+      { satz: "Niemand ___, wem der Schlüssel gehörte.", grundform: "wissen", optionen: [["wusste", "praet"], ["weiss", "praes"], ["wisste", "falsch"]] },
+      { satz: "Wegen des Staus ___ der Schulbus 20 Minuten zu spät.", grundform: "kommen", optionen: [["kam", "praet"], ["kommt", "praes"], ["ist gekommen", "perf"]] },
+      { satz: "Jonas ___ auf der Baustelle einen Helm.", grundform: "tragen", optionen: [["trug", "praet"], ["trägt", "praes"], ["tragte", "falsch"]] },
+      { satz: "Das Publikum ___ am Ende lange.", grundform: "klatschen", optionen: [["klatschte", "praet"], ["klatscht", "praes"], ["hat geklatscht", "perf"]] },
+      { satz: "Lara ___ das Seil mit beiden Händen fest.", grundform: "halten", optionen: [["hielt", "praet"], ["hält", "praes"], ["haltete", "falsch"]] },
+      { satz: "Frau Rossi ___ ihr Café um 8 Uhr.", grundform: "öffnen", optionen: [["öffnete", "praet"], ["öffnet", "praes"], ["hat geöffnet", "perf"]] },
+      { satz: "Die Feuerwehrleute ___ die Leiter an die Wand.", grundform: "stellen", optionen: [["stellten", "praet"], ["stellen", "praes"], ["haben gestellt", "perf"]] }
+    ],
+    B: [
+      { satz: "Nachdem die Polizei die Strasse gesperrt hatte, ___ der Forstdienst die kranke Linde beim Schulhaus Bach.", grundform: "fällen", optionen: [["fällte", "praet"], ["hatte gefällt", "plusq"], ["fällt", "praes"], ["fiel", "falsch", "«fiel» kommt von «fallen». Hier brauchst du «fällen»: einen Baum umsägen."]] },
+      { satz: "Weil der Warenlift defekt war, ___ Jonas und Luan die neuen Stühle in den dritten Stock.", grundform: "bringen", optionen: [["brachten", "praet"], ["bringen", "praes"], ["bringten", "falsch"], ["haben gebracht", "perf"]] },
+      { satz: "Während seiner Schnupperwoche ___ Noah jeden Tag mit einem Monteur zu einer anderen Baustelle.", grundform: "fahren", optionen: [["fuhr", "praet"], ["fährt", "praes"], ["fahrte", "falsch"], ["ist gefahren", "perf"]] },
+      { satz: "Nachdem die Kinder ihre Jacken aufgehängt hatten, ___ Sina ihnen in der Ludothek eine kurze Einführung.", grundform: "geben", optionen: [["gab", "praet"], ["hatte gegeben", "plusq"], ["gibt", "praes"], ["gebte", "falsch"]] },
+      { satz: "Im Alterszentrum ___ acht Bewohnerinnen und Bewohner am Freitag mit grossen Karten einen Jass.", grundform: "spielen", optionen: [["spielten", "praet"], ["spielte", "falsch", "«spielte» passt zu einer Person. Es sind acht Personen: Du brauchst die Mehrzahl."], ["spielen", "praes"], ["haben gespielt", "perf"]] },
+      { satz: "Luan ___ die Bretter genau ab, bevor er sie mit der Säge zuschnitt.", grundform: "abmessen", optionen: [["mass", "praet"], ["misst", "praes"], ["messte", "falsch"]] },
+      { satz: "Im Dorfmuseum ___ die Klasse 3b, wie hart Schmiede früher arbeiten mussten.", grundform: "erfahren", optionen: [["erfuhr", "praet"], ["erfährt", "praes"], ["erfahrte", "falsch"], ["hat erfahren", "perf"]] },
+      { satz: "Weil eine Klappe nicht richtig verschlossen war, ___ der Lastwagen auf der Industriestrasse Kies.", grundform: "verlieren", optionen: [["verlor", "praet"], ["verliert", "praes"], ["verlierte", "falsch"], ["hat verloren", "perf"]] },
+      { satz: "Bevor Herr Meier das Wespennest entfernte, ___ er alle Fenster im Schulzimmer.", grundform: "schliessen", optionen: [["schloss", "praet"], ["schliesst", "praes"], ["schliesste", "falsch"]] },
+      { satz: "Nachdem die Gruppe die Herzmassage geübt hatte, ___ der Kursleiter jede Person einzeln nach vorne.", grundform: "rufen", optionen: [["rief", "praet"], ["hatte gerufen", "plusq"], ["ruft", "praes"], ["rufte", "falsch"]] },
+      { satz: "Am Sonntag ___ sich viele Jugendliche zur Eröffnung des neuen Skateparks.", grundform: "treffen", optionen: [["trafen", "praet"], ["haben getroffen", "perf"], ["treffen", "praes"], ["trefften", "falsch"]] },
+      { satz: "Für die Inventur ___ Jonas den ganzen Samstag im Lager des Sportgeschäfts.", grundform: "verbringen", optionen: [["verbrachte", "praet"], ["verbringt", "praes"], ["verbringte", "falsch"], ["hat verbracht", "perf"]] }
+    ]
+  },
+
+  /* ---------------------------------------------------------------------
+     MODUS 5 «Check-Bot»: regelbasiert, ohne KI, ohne Speichern.
+     Wortlisten in Kleinbuchstaben. Ein Eintrag mit Leerzeichen ist eine
+     Wortgruppe. Ein Eintrag mit * am Ende passt auf alle Wortanfänge.
+     --------------------------------------------------------------------- */
+  checkbot: {
+    ich: ["ich", "mich", "mir", "mein*", "wir", "uns", "unser*"],
+    gefuehl: ["angst", "ängstlich", "panik", "panisch", "nervös", "traurig", "glücklich", "froh", "wütend", "sauer",
+      "freude", "freute", "freuen", "freue", "freut", "schrecklich", "furchtbar", "schlimm", "toll", "super", "mega", "cool",
+      "krass", "total", "extrem", "wahnsinnig", "unglaublich", "riesig", "wunderschön", "schön", "hässlich",
+      "eklig", "doof", "blöd", "langweilig", "spannend", "unheimlich*", "gruselig", "lustig", "witzig", "leider",
+      "zum glück", "hoffentlich", "herz raste", "zitterte*", "weinte", "wow", "oh", "juhu", "mist", "hasse",
+      "ich finde", "ich glaube", "aller zeiten", "der welt", "tausend", "ewig",
+      "stolz", "aufgeregt", "erleichtert", "begeistert*", "enttäuscht", "mutig", "endlich", "natürlich", "bestimmt"],
+    praesens: ["ist", "sind", "bin", "bist", "hat", "habe", "hast", "geht", "kommt", "fährt", "läuft", "rennt", "sieht",
+      "sagt", "macht", "gibt", "nimmt", "steht", "fällt", "ruft", "spielt", "kauft", "findet", "bleibt", "wird", "will",
+      "kann", "muss", "darf", "soll", "weiss", "sitzt", "liegt", "schreit", "hilft", "bringt", "trägt", "hält", "beginnt",
+      "gewinnt", "klettert", "holt", "zeigt", "wartet", "arbeitet", "braucht", "denkt", "fragt", "antwortet", "schreibt",
+      "liest", "schläft", "lacht", "weint", "springt", "fliegt", "stürzt", "bremst", "öffnet", "schliesst",
+      "kracht", "knallt", "brennt", "prallt", "rutscht", "stösst", "hört", "baut", "putzt", "kocht", "sucht", "trifft",
+      "verliert", "bekommt", "erhält", "schneidet", "malt", "isst", "trinkt",
+      "jetzt", "gerade"],
+    hilfsverben: ["hat", "haben", "habe", "hast", "ist", "sind", "bin", "bist"],
+    reihenfolge: ["zuerst", "dann", "danach", "anschliessend", "zum schluss", "später", "schliesslich", "am ende", "nachher", "zuletzt"],
+    wann: ["montag*", "dienstag*", "mittwoch*", "donnerstag*", "freitag*", "samstag*", "sonntag*", "januar", "februar",
+      "märz", "april", "mai", "juni", "juli", "august", "september", "oktober", "november", "dezember", "uhr", "gestern",
+      "morgens", "abends", "mittags", "nachmittags", "am morgen", "am abend", "am mittag", "am nachmittag", "in der nacht",
+      "letzte woche", "letzten", "vorgestern", "wochenende"],
+    wo: ["strasse", "platz", "schulhaus", "halle", "sporthalle", "rosental", "bahnhof", "kreuzung", "garten", "werkstatt",
+      "kita", "alterszentrum", "dorf", "stadt", "haus", "wohnung", "schule", "zimmer", "park", "wald", "see", "laden",
+      "geschäft", "baustelle", "bibliothek", "aula", "turnhalle", "trottoir", "pausenplatz", "schulhof", "lager", "firma",
+      "kletterhalle", "küche", "bus", "zug", "dach", "keller"],
+    wer: ["lara", "dario", "elif", "noah", "mia", "luan", "sina", "jonas", "frau", "herr", "klasse", "schüler*", "lernende*",
+      "lehrer*", "polizei", "polizist*", "feuerwehr*", "mann", "kind*", "jugendliche*", "person*", "leute", "team",
+      "gruppe", "zeuge", "zeugin", "hauswart*", "*fahrer*", "*gänger*", "*lenker*", "*lernende*", "*arbeiter*", "*monteur*",
+      "*berufsbildner*", "bewohner*", "eltern", "familie", "mutter", "vater", "bruder",
+      "schwester", "freund*", "nachbar*", "chef*", "kunde*", "kundin*", "publikum", "spieler*", "trainer*", "er", "sie"],   // «ich», «wir» zählen nicht als Wer (Ich-Form ist ein Hinweis)
+    warum: ["weil", "denn", "deshalb", "darum", "wegen", "grund", "ursache", "damit", "sodass", "so dass", "folge*", "daher"],
+    /* Folgen im Schluss (M2: «Schluss: Warum? Welche Folgen?»): zählen wie ein Grund */
+    folgen: ["folge*", "schaden", "schäden", "beschädig*", "kaputt", "verletz*", "schürf*", "prellung", "gebrochen", "spital",
+      "ambulanz", "krankenwagen", "arzt", "ärztin", "kosten", "kostete*"],
+    beispiele: [
+      { name: "Beispiel 1",
+        text: "Ich bin am Samstag mit Lara in die Kletterhalle gegangen. Die Wand ist mega hoch! Ich hatte so Angst." },
+      { name: "Beispiel 2",
+        text: "Am Samstag, 7. November, kletterte die Klasse 3b in der Kletterhalle Rosental. Zuerst erklärte Herr Meier die Regeln. Danach kletterten alle mit Seil und Helm. Zum Schluss erhielten alle eine Urkunde, weil niemand stürzte." }
+    ]
+  },
+
+  /* Spielnamen-Würfel: Tiernamen + Zahl. Nie echte Namen. */
+  tiere: ["Adler", "Biber", "Dachs", "Falke", "Fuchs", "Gämse", "Luchs", "Marder", "Otter", "Rabe", "Steinbock", "Wolf", "Eule", "Hirsch", "Specht", "Murmeltier"]
+};
+
+/* ========================================================================
+   2. SPEICHER: localStorage, wenn vorhanden, sonst Arbeitsspeicher.
+   ======================================================================== */
+const Speicher = (() => {
+  let vorhanden = false, ersatz = {};
+  try {
+    const p = "__test__";
+    window.localStorage.setItem(p, "1");
+    window.localStorage.removeItem(p);
+    vorhanden = true;
+  } catch (e) { vorhanden = false; }
+  return {
+    dauerhaft: vorhanden,
+    lies(schluessel, standard) {
+      try {
+        const roh = vorhanden ? window.localStorage.getItem("bd_" + schluessel) : ersatz[schluessel];
+        return roh == null ? standard : JSON.parse(roh);
+      } catch (e) { return standard; }
+    },
+    schreib(schluessel, wert) {
+      try {
+        const roh = JSON.stringify(wert);
+        if (vorhanden) window.localStorage.setItem("bd_" + schluessel, roh);
+        else ersatz[schluessel] = roh;
+      } catch (e) { /* Speichern ist nie kritisch */ }
+    },
+    loesche(schluessel) {
+      try {
+        if (vorhanden) window.localStorage.removeItem("bd_" + schluessel);
+        else delete ersatz[schluessel];
+      } catch (e) {}
+    }
+  };
+})();
+
+/* ========================================================================
+   2b. SYNCHRONISIERUNG: Firebase Realtime Database über REST
+   (Skill firebase-github-pages, assets/sync-schicht.js; Stufe 1 ohne Anmeldung).
+   Kein Firebase-SDK: eine fetch-Anbindung, nichts wird nachgeladen.
+   Die Regeln (database.rules.json) sind der Schutz, nicht dieser Code.
+   ======================================================================== */
+const KONFIG = (typeof window !== "undefined" && window.BD_KONFIG) ? window.BD_KONFIG : {};
+const DB_DOMAIN = ".firebasedatabase.app";   // einziges erlaubtes Netzwerkziel
+const ONLINE_EINGERICHTET = (() => {
+  try {
+    const u = new URL(String(KONFIG.datenbank || ""));
+    return u.protocol === "https:" && u.hostname.endsWith(DB_DOMAIN) && !/DEIN-PROJEKT/i.test(u.hostname);
+  } catch (e) { return false; }
+})();
+
+const CONFIG = {
+  datenbank: ONLINE_EINGERICHTET ? KONFIG.datenbank : "",
+  projekt: KONFIG.projekt || "bericht-detektiv",
+  taktMs: Math.max(3000, Number(KONFIG.taktMs) || 4000),
+  apiKey: ""                       // Stufe 1: keine Anmeldung
+};
+
+const Sync = (() => {
+  let idToken = null;
+  let abmeldeTimer = null;
+  let taktId = null;
+  let letzterFehler = null;
+  let aktiverTakt = null;
+  let beiAbmeldung = null;
+
+  const WARTESCHLANGE = "syncWarteschlange";
+
+  const ablage = {
+    lies(schluessel, standard) {
+      if (typeof Speicher !== "undefined") return Speicher.lies(schluessel, standard);
+      try { const roh = window.localStorage.getItem(schluessel); return roh == null ? standard : JSON.parse(roh); }
+      catch (e) { return standard; }
+    },
+    schreib(schluessel, wert) {
+      if (typeof Speicher !== "undefined") return Speicher.schreib(schluessel, wert);
+      try { window.localStorage.setItem(schluessel, JSON.stringify(wert)); } catch (e) {}
+    },
+  };
+
+  const url = (pfad) => {
+    const basis = `${CONFIG.datenbank.replace(/\/$/, "")}/${CONFIG.projekt}/` +
+                  `${pfad.replace(/^\//, "")}.json`;
+    return idToken ? `${basis}?auth=${encodeURIComponent(idToken)}` : basis;
+  };
+
+  async function anfrage(pfad, methode, koerper) {
+    if (!CONFIG.datenbank) { letzterFehler = "nicht eingerichtet"; return { ok: false, status: 0 }; }
+    try {
+      const antwort = await fetch(url(pfad), {
+        method: methode,
+        headers: koerper !== undefined ? { "Content-Type": "application/json" } : undefined,
+        body: koerper !== undefined ? JSON.stringify(koerper) : undefined,
+      });
+      if (!antwort.ok) {
+        letzterFehler = `HTTP ${antwort.status}`;
+        return { ok: false, status: antwort.status };
+      }
+      letzterFehler = null;
+      return { ok: true, daten: await antwort.json() };
+    } catch (e) {
+      letzterFehler = "kein Netz";
+      return { ok: false, status: 0 };
+    }
+  }
+
+  function geraeteId() {
+    let id = ablage.lies("geraeteId", null);
+    if (!id) {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      id = [...bytes].map(b => b.toString(36).padStart(2, "0")).join("").slice(0, 24);
+      ablage.schreib("geraeteId", id);
+    }
+    return id;
+  }
+
+  async function nachliefern() {
+    const liste = ablage.lies(WARTESCHLANGE, []);
+    if (!liste.length) return 0;
+    let geliefert = 0;
+    while (liste.length) {
+      const { pfad, wert } = liste[0];
+      const r = await anfrage(pfad, "PUT", wert);
+      if (r.ok) { liste.shift(); geliefert++; continue; }
+      if (r.status === 0) break;
+      liste.shift();
+    }
+    ablage.schreib(WARTESCHLANGE, liste);
+    return geliefert;
+  }
+
+  function abmeldenIntern(grund) {
+    idToken = null;
+    if (abmeldeTimer) { clearTimeout(abmeldeTimer); abmeldeTimer = null; }
+    if (grund && typeof beiAbmeldung === "function") beiAbmeldung(grund);
+  }
+
+  function takt() {
+    if (!aktiverTakt) return;
+    const { pfad, rueckruf } = aktiverTakt;
+    const holen = async () => {
+      await nachliefern();
+      const r = await Sync.lies(pfad);
+      if (r.ok) rueckruf(r.daten);
+    };
+    holen();
+    taktId = setInterval(holen, CONFIG.taktMs);
+  }
+
+  function pausieren() {
+    if (taktId) { clearInterval(taktId); taktId = null; }
+  }
+
+  if (typeof document !== "undefined" && document.addEventListener) {
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) pausieren();
+      else if (aktiverTakt && !taktId) takt();
+    });
+  }
+  if (typeof window !== "undefined" && window.addEventListener) {
+    window.addEventListener("online", () => { nachliefern(); });
+  }
+
+  const Sync = {
+    get fehler() { return letzterFehler; },
+    get angemeldet() { return idToken !== null; },
+    get wartend() { return ablage.lies(WARTESCHLANGE, []).length; },
+    geraeteId,
+    lies: (pfad) => anfrage(pfad, "GET"),
+    schreib: (pfad, wert) => anfrage(pfad, "PUT", wert),
+    ergaenze: (pfad, wert) => anfrage(pfad, "PATCH", wert),
+    loesche: (pfad) => anfrage(pfad, "DELETE"),
+    async schreibSicher(pfad, wert) {
+      const r = await anfrage(pfad, "PUT", wert);
+      if (r.ok || r.status !== 0) return r;
+      const liste = ablage.lies(WARTESCHLANGE, []);
+      liste.push({ pfad, wert, zeit: Date.now() });
+      ablage.schreib(WARTESCHLANGE, liste);
+      return { ok: false, gepuffert: true };
+    },
+    nachliefern,
+    get beiAbmeldung() { return beiAbmeldung; },
+    set beiAbmeldung(f) { beiAbmeldung = f; },
+    abmelden() { abmeldenIntern(null); },
+    starteTakt(pfad, rueckruf) {
+      pausieren();
+      aktiverTakt = { pfad, rueckruf };
+      if (typeof document === "undefined" || !document.hidden) takt();
+    },
+    stoppeTakt() {
+      pausieren();
+      aktiverTakt = null;
+    },
+  };
+  return Sync;
+})();
+
+/* Falle 1: Eingabefelder nicht mitten im Tippen neu zeichnen. */
+function darfNeuZeichnen() {
+  const aktiv = document.activeElement;
+  return !(aktiv && (aktiv.tagName === "INPUT" || aktiv.tagName === "TEXTAREA"));
+}
+/* Falle 2: nur bei echter Änderung neu zeichnen (Signatur). */
+let letzteSignatur = null;
+function hatSichGeaendert(daten) {
+  const s = JSON.stringify(daten);
+  if (s === letzteSignatur) return false;
+  letzteSignatur = s;
+  return true;
+}
+
+/* ========================================================================
+   3. HILFSMITTEL
+   ======================================================================== */
+const $ = (sel, wurzel = document) => wurzel.querySelector(sel);
+const buehne = $("#buehne");
+
+function el(tag, attribute = {}, ...kinder) {
+  const k = document.createElement(tag);
+  for (const [n, w] of Object.entries(attribute)) {
+    if (n === "class") k.className = w;
+    else if (n.startsWith("on")) k.addEventListener(n.slice(2).toLowerCase(), w);
+    else if (w === true) k.setAttribute(n, "");
+    else if (w !== null && w !== undefined && w !== false) k.setAttribute(n, w);
+  }
+  for (const kind of kinder.flat()) {
+    if (kind == null || kind === false) continue;
+    k.append(kind instanceof Node ? kind : document.createTextNode(String(kind)));
+  }
+  return k;
+}
+
+function frage(text, beiJa, jaText = "Ja", neinText = "Abbrechen") {
+  const hg = el("div", { class: "dialog-hg nicht-drucken" });
+  const schliessen = () => hg.remove();
+  hg.append(el("div", { class: "dialog", role: "dialog" },
+    el("p", {}, text),
+    el("div", { class: "zeile", style: "margin-top:14px" },
+      el("button", { class: "primaer", type: "button", onclick: () => { schliessen(); beiJa(); } }, jaText),
+      el("button", { type: "button", onclick: schliessen }, neinText))));
+  document.body.append(hg);
+}
+
+function mischen(liste) {
+  const a = liste.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function csvHerunterladen(dateiname, zeilen) {
+  const inhalt = "\uFEFF" + zeilen.map(z =>
+    z.map(f => `"${String(f).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+  const url = URL.createObjectURL(new Blob([inhalt], { type: "text/csv;charset=utf-8" }));
+  const a = el("a", { href: url, download: dateiname });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function merksatzBox(id) {
+  return el("div", { class: "merksatz" }, el("b", {}, "Merksatz"), DATEN.merksaetze[id]);
+}
+function modusInfo(id) { return DATEN.modi.find(m => m.id === id); }
+function fassung(v) { return v === "B" ? "■" : "●"; }
+function zahlItems(modus, version) { return modus === "m5" ? 0 : DATEN[modus][version].length; }
+function laufTotal(l) { return l.reihenfolge.length; }   // bei «Nur diese nochmals» weniger als 12
+function aufzaehlen(liste) { return liste.length < 2 ? liste.join("") : liste.slice(0, -1).join(", ") + " und " + liste[liste.length - 1]; }
+
+/* ========================================================================
+   4. ZUSTAND
+   ======================================================================== */
+const Zustand = {
+  bildschirm: "start",
+  sitzung: null,        // {art:"allein"} | {art:"raum", code, name, id}
+  version: Speicher.lies("version", "A"),
+  lauf: null,           // {modus, version, reihenfolge, index, punkte, ersteVersuche, runde, fehler, fehlerItems, fallen, wiederholung}
+  haupt: null,          // Stand der Hauptrunde im Raum {rd, m, v, b, t, p}; Wiederholungen ändern ihn nicht
+  raumDaten: null,      // letzter Stand aus der Datenbank (Lernende)
+  infoSignatur: null,
+  hinweis: "",
+  lp: { offen: false, code: Speicher.lies("lpRaum", null), daten: null, modus: "m1", anzeige: "steuerung", uebersichtModus: "m1", uebersichtLoesung: false, uebersichtVersion: "AB", taktLaeuft: null, details: false }
+};
+
+/* ========================================================================
+   5. BILDSCHIRME
+   ======================================================================== */
+function zeichnen() {
+  buehne.replaceChildren();
+  const bilder = {
+    start: startBild, beitreten: beitretenBild, warten: wartenBild, allein: alleinBild,
+    aufgabe: aufgabeBild, ergebnis: ergebnisBild, checkbot: checkbotBild,
+    lpPin: lpPinBild, lp: lpBild
+  };
+  (bilder[Zustand.bildschirm] || startBild)();
+  statusAktualisieren();
+  window.scrollTo(0, 0);
+}
+
+function gehe(bildschirm) { Zustand.bildschirm = bildschirm; zeichnen(); }
+
+/* ---------- Kopfzeile: Verbindungsstatus ---------- */
+function statusAktualisieren() {
+  const s = $("#status");
+  const z = Zustand.sitzung;
+  if (Zustand.bildschirm === "lp" && Zustand.lp.code) {
+    s.textContent = Sync.fehler ? "Keine Verbindung" : "Verbunden";
+  } else if (z && z.art === "raum") {
+    const w = Sync.wartend;
+    s.textContent = `Raum ${z.code} · ` + (Sync.fehler ? (w ? `offline (${w} wartet)` : "offline") : "verbunden");
+  } else {
+    s.textContent = "";
+  }
+}
+setInterval(statusAktualisieren, 2000);
+
+$("#startknopf").addEventListener("click", () => {
+  const imLauf = ["aufgabe", "checkbot"].includes(Zustand.bildschirm);
+  const zumStart = () => {
+    if (Zustand.bildschirm === "lp") lpTaktStoppen();
+    Zustand.lauf = null;
+    gehe(Zustand.sitzung && Zustand.sitzung.art === "raum" ? "warten" : "start");
+  };
+  if (imLauf) frage("Willst du die Übung verlassen?", zumStart, "Ja, verlassen", "Weiterüben");
+  else zumStart();
+});
+
+/* ---------- Start ---------- */
+function startBild() {
+  const gespeichert = Speicher.lies("sitzung", null);
+  buehne.append(
+    el("div", { class: "karte" },
+      el("h2", {}, "Willkommen, Detektivin und Detektiv!"),
+      el("p", {}, "Hier übst du Berichte und Anleitungen."),
+      el("div", { class: "stapel" },
+        ONLINE_EINGERICHTET && gespeichert && gespeichert.art === "raum"
+          ? el("button", { class: "primaer wahlknopf", type: "button", onclick: () => raumWiederBetreten(gespeichert) },
+              el("span", { class: "sym" }, "↩"), el("span", {}, `Zurück in Raum ${gespeichert.code}`, el("small", {}, `als ${gespeichert.name}`)))
+          : null,
+        ONLINE_EINGERICHTET
+          ? el("button", { class: (gespeichert ? "" : "primaer ") + "wahlknopf", type: "button", onclick: () => gehe("beitreten") },
+              el("span", { class: "sym" }, "#"), el("span", {}, "Raum beitreten", el("small", {}, "Du bekommst den Code von der Lehrperson.")))
+          : null,
+        el("button", { class: (ONLINE_EINGERICHTET ? "" : "primaer ") + "wahlknopf", type: "button",
+                       onclick: () => { Zustand.sitzung = { art: "allein" }; gehe("allein"); } },
+          el("span", { class: "sym" }, "✎"), el("span", {}, "Allein üben", el("small", {}, "Ohne Raum. Ohne Rangliste.")))),
+      !ONLINE_EINGERICHTET
+        ? el("p", { class: "gedaempft" }, "Der Online-Raum ist noch nicht eingerichtet. Du kannst allein üben.")
+        : null),
+    el("div", { class: "zeile nicht-drucken" },
+      el("button", { class: "klein", type: "button", onclick: () => gehe(Zustand.lp.offen ? "lp" : "lpPin") }, "Für die Lehrperson")));
+}
+
+/* ---------- Lernende: Raum beitreten ---------- */
+function zufallsName() {
+  const t = DATEN.tiere[Math.floor(Math.random() * DATEN.tiere.length)];
+  return `${t} ${10 + Math.floor(Math.random() * 90)}`;
+}
+
+function beitretenBild() {
+  const code = el("input", { type: "text", inputmode: "numeric", maxlength: "4", autocomplete: "off",
+                             id: "code", placeholder: "z.B. 4821", pattern: "[0-9]*" });
+  const name = el("input", { type: "text", maxlength: "16", autocomplete: "off", id: "spielname",
+                             autocapitalize: "words", spellcheck: "false", placeholder: "z.B. Luchs 27" });
+  const fehler = el("p", { class: "fehlertext", role: "alert" });
+  const los = el("button", { class: "primaer", type: "button" }, "Beitreten");
+
+  los.addEventListener("click", async () => {
+    const c = code.value.trim(), n = name.value.trim().replace(/\s+/g, " ");
+    fehler.textContent = "";
+    if (!/^[0-9]{4}$/.test(c)) { fehler.textContent = "Der Code hat 4 Ziffern."; code.focus(); return; }
+    if (!/^[A-Za-zÄÖÜäöüÉÈÀéèàçÇ0-9 \-]{2,16}$/.test(n)) {
+      fehler.textContent = "Der Spielname hat 2 bis 16 Zeichen: Buchstaben, Zahlen, Leerzeichen."; name.focus(); return;
+    }
+    los.disabled = true; los.textContent = "Einen Moment …";
+    const r = await Sync.lies(`oeffentlich/raeume/${c}`);
+    los.disabled = false; los.textContent = "Beitreten";
+    if (!r.ok) {
+      fehler.textContent = r.status === 0 ? "Keine Verbindung. Du kannst allein üben." : "Der Raum ist nicht erreichbar.";
+      fehler.append(el("br"), el("button", { class: "klein", type: "button", style: "margin-top:8px",
+        onclick: () => { Zustand.sitzung = { art: "allein" }; gehe("allein"); } }, "Allein üben"));
+      return;
+    }
+    if (!r.daten || !r.daten.info) { fehler.textContent = "Diesen Raum gibt es nicht. Prüfe den Code."; return; }
+    const sitzung = { art: "raum", code: c, name: n, id: Sync.geraeteId() };
+    Zustand.sitzung = sitzung;
+    Zustand.lauf = null;
+    Zustand.infoSignatur = null;
+    Speicher.schreib("sitzung", sitzung);
+    await meldeStand({ m: "keiner", rd: 0, b: 0, t: 0, p: 0 });
+    raumBeobachten();
+    gehe("warten");
+  });
+
+  buehne.append(el("div", { class: "karte" },
+    el("h2", {}, "Raum beitreten"),
+    el("label", { for: "code" }, "Code vom Raum"), code,
+    el("label", { for: "spielname" }, "Dein Spielname"),
+    el("div", { class: "zeile", style: "flex-wrap:nowrap" }, name,
+      el("button", { class: "klein", type: "button", style: "flex:none", onclick: () => { name.value = zufallsName(); } }, "Würfeln")),
+    el("p", { class: "gedaempft" }, "Nimm einen Spielnamen. Schreib nicht deinen echten Namen."),
+    fehler,
+    el("div", { class: "weiter-zeile" }, los)));
+  code.focus();
+}
+
+function raumWiederBetreten(s) {
+  Zustand.sitzung = s;
+  Zustand.infoSignatur = null;
+  raumBeobachten();
+  gehe("warten");
+}
+
+/* Stand der Lernenden in die Datenbank schreiben (nur Spielname + Zahlen). */
+async function meldeStand(teil) {
+  const s = Zustand.sitzung;
+  if (!s || s.art !== "raum") return;
+  const l = Zustand.lauf;
+  const wert = Object.assign({
+    n: s.name,
+    v: l ? l.version : "A",
+    m: l ? l.modus : "keiner",
+    rd: l ? l.runde : 0,
+    b: l ? l.index : 0,
+    t: l ? laufTotal(l) : 0,
+    p: l ? l.punkte : 0,
+    zeit: Date.now()
+  }, teil || {});
+  // Wiederholung («Nur diese n nochmals», «Alle nochmals üben») in derselben Runde: Stand der
+  // Hauptrunde behalten, damit Klassenziel und Fortschritt auf dem Beamer nie rückwärts springen.
+  const h = Zustand.haupt;
+  if (l && !teil) {
+    if (l.wiederholung && h && h.rd === l.runde && h.m === l.modus && h.v === l.version) {
+      const voll = laufTotal(l) === h.t;
+      wert.b = Math.max(h.b, voll ? l.index : 0);
+      wert.t = h.t;
+      wert.p = Math.max(h.p, voll ? l.punkte : 0);
+    }
+    if (!h || h.rd !== l.runde || h.m !== l.modus || h.v !== l.version || !l.wiederholung || wert.b > h.b) {
+      Zustand.haupt = { rd: wert.rd, m: wert.m, v: wert.v, b: wert.b, t: wert.t, p: wert.p };
+    }
+  }
+  await Sync.schreibSicher(`oeffentlich/raeume/${s.code}/spieler/${s.id}`, wert);
+  statusAktualisieren();
+}
+
+/* Takt für Lernende: reagiert nur auf Änderungen in info (Modus, Runde, Status). */
+function raumBeobachten() {
+  const s = Zustand.sitzung;
+  Sync.starteTakt(`oeffentlich/raeume/${s.code}`, (daten) => {
+    if (!Zustand.sitzung || Zustand.sitzung.art !== "raum") return;
+    if (!daten || !daten.info) { raumGeschlossen(); return; }
+    Zustand.raumDaten = daten;
+    const info = daten.info;
+    const sig = `${info.runde}|${info.status}|${info.modus}`;
+    if (sig === Zustand.infoSignatur) return;
+    if (!darfNeuZeichnen()) return;           // nicht beim Tippen umschalten; nächster Takt
+    Zustand.infoSignatur = sig;
+    aufInfoReagieren(info, daten);
+  });
+}
+
+function aufInfoReagieren(info, daten) {
+  const s = Zustand.sitzung;
+  if (info.status === "laeuft" && info.modus && info.modus !== "keiner") {
+    if (!Zustand.lauf || Zustand.lauf.runde !== info.runde) {
+      const zut = (daten.zuteilung || {})[s.id];
+      const version = zut === "A" || zut === "B" ? zut : (info.vStandard === "B" ? "B" : "A");
+      laufStarten(info.modus, version, info.runde);
+    }
+  } else if (Zustand.lauf && ["aufgabe", "checkbot"].includes(Zustand.bildschirm)) {
+    Zustand.hinweis = "Die Lehrperson hat die Übung beendet.";
+    gehe(Zustand.lauf.modus === "m5" ? "warten" : "ergebnis");
+  } else if (Zustand.bildschirm === "warten") {
+    zeichnen();
+  }
+}
+
+function raumGeschlossen() {
+  Sync.stoppeTakt();
+  Speicher.loesche("sitzung");
+  Zustand.sitzung = null;
+  Zustand.lauf = null;
+  Zustand.bildschirm = "start";
+  zeichnen();
+  buehne.prepend(el("div", { class: "rueckmeldung nein", role: "status" }, "Der Raum ist geschlossen. Du kannst allein üben."));
+}
+
+function wartenBild() {
+  const s = Zustand.sitzung;
+  if (!s || s.art !== "raum") { gehe("start"); return; }
+  const info = Zustand.raumDaten && Zustand.raumDaten.info;
+  buehne.append(el("div", { class: "karte" },
+    el("h2", {}, `Hallo, ${s.name}!`),
+    el("p", {}, `Du bist im Raum ${s.code}.`),
+    Zustand.hinweis ? el("p", { class: "rueckmeldung ok" }, Zustand.hinweis) : null,
+    el("p", {}, info && info.status === "laeuft" ? "Die Übung startet gleich …" : "Warte, bis die Lehrperson eine Übung startet."),
+    el("p", { class: "gedaempft" }, "Du musst nichts tippen. Die Übung erscheint von selbst.")),
+    el("div", { class: "zeile" },
+      el("button", { class: "klein", type: "button", onclick: () => frage("Willst du den Raum verlassen?", raumVerlassen, "Ja, verlassen") }, "Raum verlassen")));
+  Zustand.hinweis = "";
+}
+
+async function raumVerlassen() {
+  const s = Zustand.sitzung;
+  Sync.stoppeTakt();
+  if (s && s.art === "raum") await Sync.loesche(`oeffentlich/raeume/${s.code}/spieler/${s.id}`);
+  Speicher.loesche("sitzung");
+  Zustand.sitzung = null; Zustand.lauf = null; Zustand.infoSignatur = null;
+  gehe("start");
+}
+
+/* ---------- Allein üben: Version und Modus wählen ---------- */
+function alleinBild() {
+  const segA = el("button", { type: "button", class: Zustand.version === "A" ? "an" : "", "aria-pressed": String(Zustand.version === "A") }, "Version A");
+  const segB = el("button", { type: "button", class: Zustand.version === "B" ? "an" : "", "aria-pressed": String(Zustand.version === "B") }, "Version B");
+  const setze = (v) => { Zustand.version = v; Speicher.schreib("version", v);
+    segA.className = v === "A" ? "an" : ""; segB.className = v === "B" ? "an" : "";
+    segA.setAttribute("aria-pressed", String(v === "A")); segB.setAttribute("aria-pressed", String(v === "B")); };
+  segA.addEventListener("click", () => setze("A"));
+  segB.addEventListener("click", () => setze("B"));
+  buehne.append(
+    el("div", { class: "karte" },
+      el("h2", {}, "Allein üben"),
+      el("p", { class: "gedaempft" }, "Welche Version? Die Lehrperson sagt es dir."),
+      el("div", { class: "segment" }, segA, segB)),
+    el("div", { class: "stapel" },
+      DATEN.modi.map(m => el("button", { class: "wahlknopf", type: "button", onclick: () => laufStarten(m.id, Zustand.version, 0) },
+        el("span", { class: "sym", "aria-hidden": "true" }, m.sym),
+        el("span", {}, m.name, el("small", {}, m.info))))));
+}
+
+/* ---------- Übung starten ---------- */
+function laufStarten(modus, version, runde, auswahl, nochmals) {
+  const n = zahlItems(modus, version);
+  const liste = auswahl && auswahl.length ? auswahl.slice() : [...Array(n).keys()];
+  Zustand.lauf = {
+    modus, version, runde: runde || 0,
+    reihenfolge: n ? mischen(liste) : [],
+    index: 0, punkte: 0, ersteVersuche: 0, fehler: 0,
+    fehlerItems: [],                 // Aufgaben (Nummer in DATEN) mit mindestens einem Fehlversuch
+    fallen: {},                      // Fehlermuster: Falle bzw. W-Frage -> Anzahl
+    wiederholung: !!(auswahl && auswahl.length) || !!nochmals,
+    gezaehltW: {}                    // Modus 2: Satzteile, deren W-Frage schon gezählt wurde
+  };
+  meldeStand();
+  gehe(modus === "m5" ? "checkbot" : "aufgabe");
+}
+
+function aktuellesItem() {
+  const l = Zustand.lauf;
+  return DATEN[l.modus][l.version][l.reihenfolge[l.index]];
+}
+
+/* Ein Item ist gelöst: Punkte vergeben (2 = beim ersten Versuch, 1 = mit Hilfe). */
+function itemGeloest() {
+  const l = Zustand.lauf;
+  if (l.fehler === 0) { l.punkte += 2; l.ersteVersuche++; } else { l.punkte += 1; }
+}
+
+/* Ein Fehlversuch: zählen, Fehlermuster sammeln, beim ersten Fehlversuch einer Aufgabe
+   den anonymen Zähler des Raums erhöhen (nur Zahl pro Aufgabe, kein Name, keine Antwort). */
+const W_SCHLUESSEL = { "Wer?": "wer", "Was?": "was", "Wann?": "wann", "Wo?": "wo", "Wie?": "wie", "Warum?": "warum" };
+function fehlerVermerken(falle) {
+  const l = Zustand.lauf;
+  l.fehler++;
+  [].concat(falle || []).forEach(f => { l.fallen[f] = (l.fallen[f] || 0) + 1; });
+  if (l.fehler === 1) {
+    const nr = l.reihenfolge[l.index];
+    l.fehlerItems.push(nr);
+    raumFehlerZaehlen(l, nr);
+  }
+}
+
+/* Pro Gerät, Runde und Aufgabe höchstens einmal zählen (auch nach Neuladen der Seite). */
+function schonGezaehlt(schluessel) {
+  const s = Zustand.sitzung;
+  const alle = Speicher.lies("gezaehlt", {});
+  const praefix = `${s.code}_`;
+  const sauber = {};
+  Object.keys(alle).filter(k => k.startsWith(praefix)).forEach(k => { sauber[k] = alle[k]; });
+  if (sauber[schluessel]) return true;
+  sauber[schluessel] = 1;
+  Speicher.schreib("gezaehlt", sauber);
+  return false;
+}
+
+async function raumFehlerZaehlen(l, nr, wFrage) {
+  const s = Zustand.sitzung;
+  if (!s || s.art !== "raum" || l.wiederholung) return;
+  const mv = `${l.modus}${l.version}${wFrage ? "w" : ""}`;
+  const feld = wFrage ? `${W_SCHLUESSEL[wFrage]}` : `${nr}`;
+  if (!feld || schonGezaehlt(`${s.code}_${l.runde}_${mv}_${wFrage ? nr + "_" + wFrage : nr}`)) return;
+  const pfad = `oeffentlich/raeume/${s.code}/fehler/${mv}/${feld}`;
+  const r = await Sync.schreibSicher(pfad, { ".sv": { "increment": 1 } });
+  if (!r.ok && !r.gepuffert && r.status === 400) {       // Rückfall, falls der Server «increment» nicht kennt
+    const alt = await Sync.lies(pfad);
+    if (alt.ok) await Sync.schreib(pfad, Math.min(99, (Number(alt.daten) || 0) + 1));
+  }
+}
+
+function weiterGehen() {
+  const l = Zustand.lauf;
+  l.index++;
+  l.fehler = 0;
+  meldeStand();
+  if (l.index >= laufTotal(l)) {
+    if (!Zustand.sitzung || Zustand.sitzung.art !== "raum") {
+      const verlauf = Speicher.lies("verlauf", []);
+      verlauf.push({ modus: l.modus, version: l.version, erste: l.ersteVersuche, total: l.index, zeit: Date.now() });
+      Speicher.schreib("verlauf", verlauf.slice(-50));
+    }
+    gehe("ergebnis");
+  } else {
+    zeichnen();
+  }
+}
+
+function rahmenAufgabe(auftrag, ...inhalt) {
+  const l = Zustand.lauf;
+  const total = laufTotal(l);
+  buehne.append(
+    el("div", { class: "nicht-drucken" },
+      el("div", { class: "zeile", style: "justify-content:space-between" },
+        el("span", { class: "gedaempft" }, modusInfo(l.modus).name),
+        el("span", { class: "gedaempft" }, `Aufgabe ${l.index + 1} von ${total}`)),
+      el("div", { class: "leiste", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": String(total), "aria-valuenow": String(l.index) },
+        el("i", { style: `width:${l.index / total * 100}%` }))),
+    el("div", { class: "karte" }, el("h2", {}, auftrag), ...inhalt));
+}
+
+function weiterKnopf() {
+  const letzte = Zustand.lauf.index + 1 >= laufTotal(Zustand.lauf);
+  return el("div", { class: "weiter-zeile" },
+    el("button", { class: "primaer", type: "button", onclick: weiterGehen }, letzte ? "Zum Ergebnis" : "Weiter"));
+}
+
+function aufgabeBild() {
+  const l = Zustand.lauf;
+  if (!l) { gehe("start"); return; }
+  ({ m1: modus1, m2: modus2, m3: modus3, m4: modus4 }[l.modus])(aktuellesItem());
+}
+
+/* ---------- MODUS 1: Bericht oder Erzählung? ---------- */
+function modus1(item) {
+  const rueck = el("div", { class: "", role: "status", "aria-live": "polite" });
+  const fertig = el("div");
+  const saetze = mischen([{ t: item.bericht, ok: true }].concat(item.andere.map((t, j) => ({ t, ok: false, fallen: (item.fallen && item.fallen[j]) || [] }))));
+  const knoepfe = saetze.map(s => {
+    const b = el("button", { class: "antwort", type: "button" }, s.t);
+    b.addEventListener("click", () => {
+      if (s.ok) {
+        itemGeloest();
+        knoepfe.forEach(k => { k.disabled = true; });
+        b.className = "antwort richtig";
+        b.prepend(el("span", { class: "marke" }, "✓ Bericht"));
+        rueck.className = "rueckmeldung ok";
+        rueck.replaceChildren(el("strong", {}, "Richtig. "), item.erklaerung, merksatzBox("M3"));
+        fertig.replaceChildren(weiterKnopf());
+        meldeStand();
+      } else {
+        fehlerVermerken(s.fallen);
+        b.disabled = true;
+        b.className = "antwort falsch";
+        b.prepend(el("span", { class: "marke" }, "Erzählung"));
+        rueck.className = "rueckmeldung nein";
+        // Rückmeldung zum GEWÄHLTEN Satz (verrät den richtigen nicht), danach der Tipp
+        const namen = s.fallen.filter(f => DATEN.fallen[f]).map(f => DATEN.fallen[f][0]);
+        rueck.replaceChildren(el("strong", {}, "Noch nicht. "),
+          namen.length ? `In diesem Satz steckt ${aufzaehlen(namen)}. ` : "", "Tipp: " + item.tipp);
+      }
+    });
+    return b;
+  });
+  rahmenAufgabe(DATEN.m1.auftrag, el("div", { class: "stapel" }, knoepfe), rueck, fertig);
+}
+
+/* ---------- MODUS 2: W-Fragen finden ---------- */
+function modus2(item) {
+  const l = Zustand.lauf;
+  const rueck = el("div", { class: "", role: "status", "aria-live": "polite" });
+  const fertig = el("div");
+  const offen = [];
+  let gewaehlt = null;
+  let wKnoepfe = [];
+  const hinweisZeile = el("p", { class: "gedaempft" }, "");
+
+  const satz = el("div", { class: "satz" });
+  const gruppen = {};   // Gruppennummer -> Eintrag (getrennte Teile von «Was?» zählen als ein Satzteil)
+  item.teile.forEach(([text, w, gruppe]) => {
+    if (!w && /^[.,!?]$/.test(text) && satz.lastChild) {
+      // Satzzeichen bleibt am vorherigen Satzteil (kein Umbruch davor)
+      const vorher = satz.lastChild;
+      const paar = el("span", { class: "paar" });
+      satz.replaceChild(paar, vorher);
+      paar.append(vorher, el("span", { class: "text" }, text));
+      return;
+    }
+    if (!w) { satz.append(el("span", { class: "text" }, text)); return; }
+    const b = el("button", { class: "teil", type: "button", "aria-pressed": "false" }, text);
+    let eintrag = gruppe ? gruppen[gruppe] : null;
+    if (eintrag) { eintrag.knoepfe.push(b); eintrag.texte.push(text); }
+    else {
+      eintrag = { knoepfe: [b], texte: [text], w, erledigt: false, versuche: [] };
+      if (gruppe) gruppen[gruppe] = eintrag;
+      offen.push(eintrag);
+    }
+    const dieser = eintrag;
+    b.addEventListener("click", () => { if (!dieser.erledigt) waehle(dieser); });
+    satz.append(b);
+  });
+
+  function waehle(e) {
+    offen.forEach(o => o.knoepfe.forEach(k => { k.classList.remove("gewaehlt"); k.setAttribute("aria-pressed", "false"); }));
+    gewaehlt = e;
+    if (e) e.knoepfe.forEach(k => { k.classList.add("gewaehlt"); k.setAttribute("aria-pressed", "true"); });
+    hinweisZeile.textContent = (e && e.knoepfe.length > 1)
+      ? "Die Teile mit dem dicken orangen Rahmen gehören zusammen. Welche W-Frage passt?"
+      : "Der Satzteil mit dem dicken orangen Rahmen ist gewählt. Welche W-Frage passt?";
+    // W-Fragen, die bei diesem Satzteil schon falsch waren, bleiben rot und gesperrt
+    wKnoepfe.forEach(k => {
+      const schonFalsch = !!(e && e.versuche.includes(k.dataset.w));
+      k.classList.toggle("falsch", schonFalsch);
+      k.disabled = schonFalsch;
+    });
+  }
+
+  const raster = el("div", { class: "wraster" }, DATEN.m2.knoepfe[l.version].map(w => {
+    const k = el("button", { type: "button", "data-w": w }, w);
+    k.addEventListener("click", () => {
+      if (!gewaehlt) { rueck.className = "rueckmeldung nein"; rueck.replaceChildren("Tippe zuerst auf einen Satzteil."); return; }
+      if (w === gewaehlt.w) {
+        gewaehlt.erledigt = true;
+        gewaehlt.knoepfe.forEach((k, i) => {
+          k.classList.remove("gewaehlt");
+          k.classList.add("erledigt");
+          k.disabled = true;
+          k.prepend(el("span", { class: "etikett" }, i === 0 ? "✓ " + w : "✓ … " + w));
+        });
+        const naechster = offen.find(o => !o.erledigt);
+        if (naechster) {
+          rueck.className = "rueckmeldung ok";
+          rueck.replaceChildren(el("strong", {}, "Richtig. "), "Weiter mit dem nächsten Satzteil.");
+          waehle(naechster);
+        } else {
+          gewaehlt = null;
+          itemGeloest();
+          raster.classList.add("verborgen");
+          hinweisZeile.classList.add("verborgen");
+          rueck.className = "rueckmeldung ok";
+          rueck.replaceChildren(el("strong", {}, "Richtig. "), "Du hast alle W-Fragen gefunden.", merksatzBox("M2"));
+          fertig.replaceChildren(weiterKnopf());
+          meldeStand();
+        }
+      } else {
+        // Gestufte Hilfe pro Satzteil: 1. Frage zur gewählten W-Frage, 2. Tipp zur richtigen, 3. Lösung
+        const e = gewaehlt;
+        e.versuche.push(w);
+        const stufe = e.versuche.length;
+        fehlerVermerken(stufe === 1 ? e.w : null);
+        if (stufe === 1) raumFehlerZaehlen(l, l.reihenfolge[l.index], e.w);
+        k.classList.add("falsch");
+        k.disabled = true;
+        let text;
+        if (stufe === 1) text = DATEN.m2.hilfeFalsch[w].replace("{teil}", e.texte.join(" … "));
+        else if (stufe === 2) text = "Tipp: " + DATEN.m2.hilfe[e.w];
+        else text = `Die Lösung ist «${e.w}». Tippe auf «${e.w}».`;
+        rueck.className = "rueckmeldung nein";
+        rueck.replaceChildren(el("strong", {}, "Noch nicht. "), text);
+      }
+    });
+    return k;
+  }));
+  wKnoepfe = [...raster.querySelectorAll("button")];
+
+  waehle(offen[0]);
+  rahmenAufgabe(DATEN.m2.auftrag, satz, hinweisZeile, raster, rueck, fertig);
+}
+
+/* ---------- MODUS 3: Anleitung ordnen (Tippen statt Ziehen) ---------- */
+function modus3(item) {
+  const l = Zustand.lauf;
+  const n = item.schritte.length;
+  const plaetze = new Array(n).fill(null);   // Index des Schritts oder null
+  const fix = new Array(n).fill(false);
+  if (DATEN.m3.schritt1Vorgegeben[l.version]) { plaetze[0] = 0; fix[0] = true; }
+
+  let pool = mischen([...Array(n).keys()].filter(i => !plaetze.includes(i)));
+  // Nicht zufällig schon richtig sortiert anbieten
+  if (pool.length > 1 && pool.every((v, i) => i === 0 || pool[i - 1] < v)) pool.push(pool.shift());
+
+  const listeEl = el("ol", { class: "plaetze" });
+  const poolEl = el("div", { class: "pool" });
+  const pruefen = el("button", { class: "primaer", type: "button", disabled: true }, "Reihenfolge prüfen");
+  const rueck = el("div", { class: "", role: "status", "aria-live": "polite" });
+  const fertig = el("div");
+
+  function neu() {
+    listeEl.replaceChildren(...plaetze.map((s, i) => el("li", { class: "platz" },
+      el("span", { class: "nr", "aria-hidden": "true" }, String(i + 1)),
+      s === null
+        ? el("span", { class: "leer" }, "…")
+        : el("button", { type: "button", class: fix[i] ? "fix" : "", disabled: fix[i],
+                         "aria-label": `Schritt ${i + 1}: ${item.schritte[s]}${fix[i] ? "" : " (antippen zum Entfernen)"}`,
+                         onclick: () => { plaetze[i] = null; pool.push(s); neu(); } },
+            (fix[i] ? "✓ " : "") + item.schritte[s]))));
+    poolEl.replaceChildren(...pool.map(s => el("button", { class: "antwort", type: "button",
+      onclick: () => { const frei = plaetze.indexOf(null); if (frei < 0) return; plaetze[frei] = s; pool = pool.filter(x => x !== s); neu(); } },
+      item.schritte[s])));
+    pruefen.disabled = plaetze.includes(null);
+    poolEl.parentElement && (poolEl.previousElementSibling.classList.toggle("verborgen", pool.length === 0));
+  }
+
+  pruefen.addEventListener("click", () => {
+    let richtig = 0;
+    plaetze.forEach((s, i) => {
+      if (s === i) { richtig++; fix[i] = true; }
+      else if (!fix[i]) { pool.push(s); plaetze[i] = null; }
+    });
+    if (richtig === n) {
+      itemGeloest();
+      pruefen.classList.add("verborgen");
+      rueck.className = "rueckmeldung ok";
+      rueck.replaceChildren(el("strong", {}, "Richtig. "), item.erklaerung, merksatzBox("M4"));
+      fertig.replaceChildren(weiterKnopf());
+      meldeStand();
+    } else {
+      fehlerVermerken(null);
+      pool = mischen(pool);
+      rueck.className = "rueckmeldung nein";
+      rueck.replaceChildren(el("strong", {}, "Noch nicht. "),
+        `${richtig} von ${n} Schritten stimmen. Die grünen Schritte bleiben. Ordne die anderen neu.`);
+    }
+    neu();
+  });
+
+  rahmenAufgabe(DATEN.m3.auftrag,
+    el("h3", {}, item.titel),
+    DATEN.m3.schritt1Vorgegeben[l.version] ? el("p", { class: "gedaempft" }, "Schritt 1 steht schon da.") : null,
+    listeEl,
+    el("p", { class: "gedaempft" }, "Diese Schritte fehlen noch. Tippe den nächsten an:"),
+    poolEl,
+    el("div", { class: "weiter-zeile" }, pruefen),
+    rueck, fertig);
+  neu();
+}
+
+/* ---------- MODUS 4: Präteritum ---------- */
+function modus4(item) {
+  const rueck = el("div", { class: "", role: "status", "aria-live": "polite" });
+  const fertig = el("div");
+  const [vor, nach] = item.satz.split("___");
+  const luecke = el("span", { class: "luecke" }, "\u00a0".repeat(6));
+  const richtigeForm = item.optionen.find(o => o[1] === "praet")[0];
+  const erkl = {
+    praes: (f) => `«${f}» ist Präsens. Das Präsens zeigt: jetzt. Im Bericht brauchst du das Präteritum.`,
+    perf: (f) => `«${f}» ist Perfekt. Das Perfekt hat zwei Teile. Im Bericht brauchst du das Präteritum. Hier ist es ein Wort.`,
+    plusq: (f) => `«${f}» zeigt, was vorher passiert war. Hier brauchst du das Ereignis selbst: Präteritum.`,
+    konj: (f) => `«${f}» passt nicht. Ein Bericht sagt, was wirklich passiert ist: Präteritum.`,
+    falsch: (f) => `«${f}» gibt es nicht. Das Verb «${item.grundform}» verändert sich im Präteritum.`
+  };
+  const knoepfe = mischen(item.optionen).map(([form, art, eigene]) => {
+    const b = el("button", { class: "antwort", type: "button", style: "text-align:center" }, form);
+    b.addEventListener("click", () => {
+      if (art === "praet") {
+        itemGeloest();
+        knoepfe.forEach(k => { k.disabled = true; });
+        b.className = "antwort richtig";
+        luecke.textContent = form;
+        rueck.className = "rueckmeldung ok";
+        rueck.replaceChildren(el("strong", {}, "Richtig. "), `${item.grundform} → ${richtigeForm}. Das ist Präteritum.`, merksatzBox("M1"));
+        fertig.replaceChildren(weiterKnopf());
+        meldeStand();
+      } else {
+        fehlerVermerken(art);
+        b.disabled = true;
+        b.className = "antwort falsch";
+        rueck.className = "rueckmeldung nein";
+        rueck.replaceChildren(el("strong", {}, "Noch nicht. "), eigene || erkl[art](form));
+      }
+    });
+    return b;
+  });
+  rahmenAufgabe(DATEN.m4.auftrag,
+    el("p", { style: "font-size:1.25rem;margin:14px 0" }, vor, luecke, nach,
+      el("span", { class: "gedaempft" }, ` (${item.grundform})`)),
+    el("div", { class: "stapel", style: "grid-template-columns:repeat(auto-fit,minmax(150px,1fr))" }, knoepfe),
+    rueck, fertig);
+}
+
+/* ---------- Ergebnis ---------- */
+/* Fehlermuster: was die Lernenden gezielt nochmals üben («Das übst du noch: …»). */
+function fehlermuster(l) {
+  if (!l.fehlerItems.length) return [];
+  if (l.modus === "m3") return [...new Set(l.fehlerItems)].map(nr => DATEN.m3[l.version][nr].titel);
+  const eintraege = Object.entries(l.fallen).sort((a, b) => b[1] - a[1]);
+  if (!eintraege.length) return [];
+  if (l.modus === "m2") return eintraege.map(([w]) => w);                    // W-Fragen, häufigste zuerst
+  const max = eintraege[0][1];                                               // Modus 1 und 4: häufigste Falle(n)
+  return eintraege.filter(([, n]) => n === max).slice(0, 2)
+    .map(([f]) => (DATEN.fallen[f] ? DATEN.fallen[f][1] : f));
+}
+
+function ergebnisBild() {
+  const l = Zustand.lauf;
+  if (!l) { gehe("start"); return; }
+  const total = laufTotal(l);
+  const geloest = Math.min(l.index, total);
+  const imRaum = Zustand.sitzung && Zustand.sitzung.art === "raum";
+  const muster = fehlermuster(l);
+  const nochmals = [...new Set(l.fehlerItems)];
+  buehne.append(el("div", { class: "karte" },
+    Zustand.hinweis ? el("p", { class: "gedaempft" }, Zustand.hinweis) : null,
+    el("h2", {}, geloest === total ? `Geschafft! Du hast alle ${total} Aufgaben gelöst.` : `Du hast ${geloest} von ${total} Aufgaben gelöst.`),
+    el("p", {}, `Beim ersten Versuch richtig: ${l.ersteVersuche} von ${geloest}.`),
+    el("p", { class: "gedaempft" }, `Punkte: ${l.punkte} von ${geloest * 2}`),
+    nochmals.length
+      ? el("div", { class: "muster" },
+          el("strong", {}, { m2: "Das übst du noch: diese W-Fragen", m3: "Das übst du noch: diese Anleitungen" }[l.modus]
+                           || "Das übst du noch (deine häufigste Falle):"),
+          muster.length ? el("ul", {}, muster.map(m => el("li", {}, m))) : null,
+          el("div", { class: "zeile", style: "margin-top:10px" },
+            el("button", { class: "primaer", type: "button", onclick: () => laufStarten(l.modus, l.version, l.runde, nochmals) },
+              nochmals.length === 1 ? "Diese Aufgabe nochmals" : `Nur diese ${nochmals.length} nochmals`)))
+      : (geloest > 0 ? el("p", { class: "rueckmeldung ok" }, "Alles beim ersten Versuch richtig. Stark!") : null),
+    merksatzBox(modusInfo(l.modus).merksatz),
+    el("div", { class: "zeile", style: "margin-top:16px" },
+      imRaum
+        ? el("button", { class: nochmals.length ? "" : "primaer", type: "button", onclick: () => { Zustand.lauf = null; gehe("warten"); } }, "Fertig")
+        : el("button", { class: nochmals.length ? "" : "primaer", type: "button", onclick: () => laufStarten(l.modus, l.version, 0) }, "Alle nochmals üben"),
+      imRaum
+        ? el("button", { type: "button", onclick: () => laufStarten(l.modus, l.version, l.runde, null, true) }, "Alle nochmals üben")
+        : el("button", { type: "button", onclick: () => gehe("allein") }, "Andere Übung"))));
+  Zustand.hinweis = "";
+}
+
+/* ---------- MODUS 5: Check-Bot (regelbasiert, ohne KI, nichts wird gespeichert) ---------- */
+function woerterFinden(text, liste) {
+  // liefert Treffer [{start, ende, wort}] für Wörter/Wortgruppen aus der Liste
+  const treffer = [];
+  const klein = text.toLowerCase();
+  liste.forEach(eintrag => {
+    const stern = eintrag.endsWith("*");
+    const vorne = eintrag.startsWith("*");          // «*fahrer*» findet auch «Velofahrer», «Autofahrerin»
+    const kern = eintrag.slice(vorne ? 1 : 0, stern ? -1 : undefined).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/ /g, "\\s+");
+    const re = new RegExp(`(^|[^a-zäöüéèàç])(${vorne ? "[a-zäöüéèàç]*" : ""}${kern}${stern ? "[a-zäöüéèàç]*" : ""})(?![a-zäöüéèàç])`, "g");
+    let m;
+    while ((m = re.exec(klein)) !== null) {
+      const start = m.index + m[1].length;
+      treffer.push({ start, ende: start + m[2].length, wort: text.slice(start, start + m[2].length) });
+      re.lastIndex = start + m[2].length;
+    }
+  });
+  return treffer;
+}
+
+function checkbotAnalyse(text) {
+  const cb = DATEN.checkbot;
+  const saetze = text.replace(/([.!?])\s+/g, "$1\n").split(/\n+/).map(s => s.trim()).filter(s => s.split(/\s+/).length >= 2);
+  const marken = [];   // {start, ende, art}
+  const gut = [], hin = [];
+  const einzig = (arr) => {            // doppelte ohne Rücksicht auf Gross/Klein entfernen, Schreibweise aus dem Text
+    const gesehen = new Set(), aus = [];
+    arr.slice().sort((a, b) => a.start - b.start).forEach(t => {
+      const k = t.wort.toLowerCase().replace(/\s+/g, " ");
+      if (!gesehen.has(k)) { gesehen.add(k); aus.push(t.wort.replace(/\s+/g, " ")); }
+    });
+    return aus;
+  };
+
+  // Perfekt: Hilfsverb + Partizip ge…t/ge…en im selben Satz
+  const perfekt = [];
+  const reSatz = /[^.!?\n]+[.!?]?/g; let ms;
+  while ((ms = reSatz.exec(text)) !== null) {
+    const satz = ms[0];
+    const hv = woerterFinden(satz, cb.hilfsverben);
+    const part = /(^|[^A-Za-zÄÖÜäöü])((?:[a-zäöü]+)?ge[a-zäöü]{2,}(?:t|en))(?![A-Za-zÄÖÜäöü])/g;
+    let mp; const partizipien = [];
+    while ((mp = part.exec(satz)) !== null) partizipien.push({ start: mp.index + mp[1].length, wort: mp[2] });
+    if (hv.length && partizipien.length) {
+      hv.forEach(h => perfekt.push({ start: ms.index + h.start, ende: ms.index + h.ende, wort: h.wort }));
+      partizipien.forEach(p => perfekt.push({ start: ms.index + p.start, ende: ms.index + p.start + p.wort.length, wort: p.wort }));
+    }
+  }
+  const perfektStarts = new Set(perfekt.map(p => p.start));
+
+  const ich = woerterFinden(text, cb.ich);
+  const gefuehl = woerterFinden(text, cb.gefuehl);
+  const praesens = woerterFinden(text, cb.praesens).filter(t => !perfektStarts.has(t.start));
+  const reihe = woerterFinden(text, cb.reihenfolge);
+  const ausruf = [...text.matchAll(/!/g)].map(m => ({ start: m.index, ende: m.index + 1, wort: "!" }));
+  const hat = (liste) => woerterFinden(text, liste).length > 0;
+  const datum = /\b\d{1,2}\.\s?\d{1,2}\.|\b\d{1,2}[:.]\d{2}\b|\b\d{4}\b/.test(text);
+  const grundOderFolgen = hat(cb.warum) || hat(cb.folgen || []);
+
+  // Erfolg zuerst: was schon gut ist
+  if (hat(cb.wann) || datum) gut.push("Du nennst eine Zeit (Wann?).");
+  if (hat(cb.wo)) gut.push("Du nennst einen Ort (Wo?).");
+  if (hat(cb.wer)) gut.push("Du nennst Personen (Wer?).");
+  if (grundOderFolgen) gut.push("Du nennst einen Grund oder Folgen (Warum? Welche Folgen?).");
+  if (reihe.length) gut.push(`Du nutzt Reihenfolgewörter: ${einzig(reihe).join(", ")}.`);
+  if (!gefuehl.length && !ausruf.length) gut.push("Ich finde keine Gefühlswörter und keine Ausrufezeichen.");
+  if (!praesens.length && !perfekt.length) gut.push("Ich habe keine bekannten Präsens- oder Perfekt-Signale gefunden. Prüfe trotzdem jedes Verb.");
+
+  // Hinweise in fester Reihenfolge: Zeitform, dann Gefühl/Meinung, dann Gerüst
+  if (praesens.length) { hin.push(`Präsens-Signal: «${einzig(praesens).join("», «")}». Im Bericht stehen die Verben im Präteritum.`); praesens.forEach(t => marken.push(t)); }
+  if (perfekt.length) { hin.push(`Perfekt-Signal: «${einzig(perfekt).join("», «")}». Schreib das Verb im Präteritum.`); perfekt.forEach(t => marken.push(t)); }
+  if (ich.length) { hin.push(`Ich-Form oder Wir-Form: «${einzig(ich).join("», «")}». Ein Bericht nennt die Personen meistens mit Namen.`); ich.forEach(t => marken.push(t)); }
+  if (gefuehl.length) { hin.push(`Gefühl, Meinung oder Übertreibung? «${einzig(gefuehl).join("», «")}». Prüfe: Ist das sachlich?`); gefuehl.forEach(t => marken.push(t)); }
+  if (ausruf.length) { hin.push("Ausrufezeichen: Ein Bericht braucht keine Ausrufezeichen."); ausruf.forEach(t => marken.push(t)); }
+  const fehlt = [];
+  if (!(hat(cb.wer))) fehlt.push("Wer?");
+  if (!(hat(cb.wann) || datum)) fehlt.push("Wann?");
+  if (!hat(cb.wo)) fehlt.push("Wo?");
+  if (fehlt.length) hin.push(`Ich finde kein Wort für: ${fehlt.join(" ")} Prüfe deine Einleitung.`);
+  if (!grundOderFolgen && saetze.length >= 3) hin.push("Ich finde kein Wort für einen Grund oder Folgen (weil, denn, wegen, deshalb, Schaden, verletzt …). Nennt dein Schluss einen Grund oder Folgen?");
+  if (!reihe.length && saetze.length >= 3) hin.push("Ich finde keine Reihenfolgewörter. Sie helfen im Hauptteil: zuerst, dann, danach, anschliessend, zum Schluss.");
+
+  return { gut, hin, marken };
+}
+
+function textMitMarken(text, marken) {
+  const sortiert = marken.slice().sort((a, b) => a.start - b.start);
+  const teile = []; let pos = 0;
+  sortiert.forEach(m => {
+    if (m.start < pos) return;   // Überlappungen überspringen
+    teile.push(text.slice(pos, m.start));
+    teile.push(el("mark", { class: "markiert" }, text.slice(m.start, m.ende)));
+    pos = m.ende;
+  });
+  teile.push(text.slice(pos));
+  return el("div", { class: "cb-text" }, teile);
+}
+
+function checkbotBild() {
+  const feld = el("textarea", { id: "cb-feld", maxlength: "1500", spellcheck: "false", autocapitalize: "sentences",
+                                "aria-label": "Dein Bericht", placeholder: "Schreib oder füge hier deinen Bericht ein." });
+  const ergebnis = el("div", { role: "status" });
+  const pruefen = () => {
+    const text = feld.value.trim();
+    feld.blur();
+    if (text.split(/\s+/).filter(Boolean).length < 3) {
+      ergebnis.replaceChildren(el("p", { class: "rueckmeldung nein" }, "Schreib mindestens einen ganzen Satz."));
+      return;
+    }
+    const a = checkbotAnalyse(text);
+    // Version A (Fassung ●): höchstens 3 Hinweise auf einmal, der Rest auf Knopfdruck
+    const version = (Zustand.lauf && Zustand.lauf.modus === "m5") ? Zustand.lauf.version : Zustand.version;
+    const grenze = version === "A" ? 3 : a.hin.length;
+    const liste = el("ul", { class: "cb-liste hin" }, a.hin.slice(0, grenze).map(h => el("li", {}, h)));
+    const rest = a.hin.slice(grenze);
+    const mehr = rest.length ? el("button", { class: "klein", type: "button", onclick: () => {
+        rest.forEach(h => liste.append(el("li", {}, h))); mehr.remove(); } }, `Mehr Hinweise (${rest.length})`) : null;
+    ergebnis.replaceChildren(...[
+      el("h3", {}, "Das ist schon gut"),
+      a.gut.length ? el("ul", { class: "cb-liste gut" }, a.gut.map(g => el("li", {}, "✓ " + g)))
+                   : el("p", { class: "gedaempft" }, "Schreib noch etwas mehr. Dann finde ich mehr."),
+      el("h3", {}, "Schau nochmals hin"),
+      a.hin.length ? liste : el("p", {}, "Ich finde nichts mehr. Prüfe trotzdem mit der Checkliste."),
+      rest.length ? el("p", { class: "gedaempft" }, "Verbessere zuerst diese 3 Punkte.") : null,
+      mehr,
+      a.marken.length ? el("div", {}, el("p", { class: "gedaempft" }, "Diese Stellen sind markiert:"), textMitMarken(text, a.marken)) : null,
+      merksatzBox("M3"),
+      el("p", { class: "gedaempft" }, "Der Check-Bot ist eine Maschine. Er kann sich irren. Du entscheidest selbst.")
+    ].filter(Boolean));
+  };
+  buehne.append(
+    el("div", { class: "karte" },
+      el("h2", {}, "Check-Bot: Prüfe deinen Bericht"),
+      el("p", {}, "Der Check-Bot gibt dir Hinweise. Er korrigiert nichts."),
+      el("p", { class: "gedaempft" }, "Dein Text wird nicht gespeichert und nicht gesendet."),
+      feld,
+      el("div", { class: "zeile", style: "margin-top:12px" },
+        el("button", { class: "primaer", type: "button", onclick: pruefen }, "Text prüfen"),
+        el("button", { type: "button", onclick: () => { feld.value = ""; ergebnis.replaceChildren(); } }, "Text löschen"),
+        DATEN.checkbot.beispiele.map(b => el("button", { class: "klein", type: "button",
+          onclick: () => { feld.value = b.text; pruefen(); } }, b.name)))),
+    el("div", { class: "karte" }, ergebnis));
+}
+
+/* ========================================================================
+   LP-ANSICHT (PIN schützt nur die Oberfläche, nicht die Daten)
+   ======================================================================== */
+function lpPinBild() {
+  const feld = el("input", { type: "password", inputmode: "numeric", placeholder: "PIN", autocomplete: "off", id: "lp-pin" });
+  const meldung = el("p", { class: "fehlertext", role: "alert" });
+  const oeffnen = () => {
+    if (feld.value === String(KONFIG.lpPin || "1234")) { Zustand.lp.offen = true; gehe("lp"); }
+    else meldung.textContent = "Der PIN stimmt nicht.";
+  };
+  feld.addEventListener("keydown", (e) => { if (e.key === "Enter") oeffnen(); });
+  buehne.append(el("div", { class: "karte" },
+    el("h2", {}, "Für die Lehrperson"),
+    el("label", { for: "lp-pin" }, "PIN"), feld, meldung,
+    el("div", { class: "zeile", style: "margin-top:12px" },
+      el("button", { class: "primaer", type: "button", onclick: oeffnen }, "Öffnen"),
+      el("button", { type: "button", onclick: () => gehe("start") }, "Zurück"))));
+  feld.focus();
+}
+
+function lpBild() {
+  if (!Zustand.lp.offen) { gehe("lpPin"); return; }
+  const lp = Zustand.lp;
+  if (lp.anzeige === "uebersicht") { lpUebersicht(); return; }
+  if (lp.anzeige === "rangliste" && KONFIG.ranglisteZeigen === true) { lpRangliste(); return; }
+  if (lp.anzeige === "klassenziel" || lp.anzeige === "rangliste") { lpKlassenziel(); return; }
+  if (lp.anzeige === "oftfalsch") { lpOftFalschBeamer(); return; }
+
+  if (!ONLINE_EINGERICHTET) {
+    buehne.append(el("div", { class: "karte" },
+      el("h2", {}, "LP-Ansicht"),
+      el("p", {}, "Der Online-Raum ist noch nicht eingerichtet. Trag die Datenbank-Adresse in firebase-config.js ein (README_LP.md, Schritt 2-4)."),
+      el("p", {}, "Ohne Raum funktionieren: «Allein üben» auf jedem Gerät und die Aufgabenübersicht."),
+      el("div", { class: "zeile" },
+        el("button", { class: "primaer", type: "button", onclick: () => { lp.anzeige = "uebersicht"; zeichnen(); } }, "Aufgaben ansehen"),
+        el("button", { type: "button", onclick: () => { lp.offen = false; gehe("start"); } }, "LP-Ansicht schliessen"))));
+    return;
+  }
+
+  if (!lp.code) {
+    const meldung = el("p", { class: "fehlertext", role: "alert" });
+    buehne.append(el("div", { class: "karte" },
+      el("h2", {}, "LP-Ansicht"),
+      el("p", {}, "Erstelle einen Raum. Die Lernenden treten mit dem Code bei."),
+      meldung,
+      el("div", { class: "zeile" },
+        el("button", { class: "primaer", type: "button", onclick: () => raumErstellen(meldung) }, "Raum erstellen"),
+        el("button", { type: "button", onclick: () => { lp.anzeige = "uebersicht"; zeichnen(); } }, "Aufgaben ansehen"),
+        el("button", { type: "button", onclick: () => { lp.offen = false; gehe("start"); } }, "LP-Ansicht schliessen"))));
+    return;
+  }
+
+  const info = (lp.daten && lp.daten.info) || { modus: "keiner", runde: 0, status: "warten", vStandard: "A" };
+  const meldung = el("p", { class: "fehlertext", role: "alert" });
+
+  const segA = el("button", { type: "button", class: info.vStandard === "A" ? "an" : "" }, lp.details ? "● Version A" : "Version A");
+  const segB = el("button", { type: "button", class: info.vStandard === "B" ? "an" : "" }, lp.details ? "■ Version B" : "Version B");
+  segA.addEventListener("click", () => infoSchreiben({ vStandard: "A" }, meldung));
+  segB.addEventListener("click", () => infoSchreiben({ vStandard: "B" }, meldung));
+
+  const modusKnoepfe = el("div", { class: "segment", style: "flex-wrap:wrap" }, DATEN.modi.map(m => {
+    const b = el("button", { type: "button", class: lp.modus === m.id ? "an" : "", style: "flex:1 1 150px" }, `${m.sym} ${m.name}`);
+    b.addEventListener("click", () => { lp.modus = m.id; zeichnen(); });
+    return b;
+  }));
+
+  const laeuft = info.status === "laeuft";
+  buehne.append(
+    el("div", { class: "karte" },
+      el("div", { class: "zeile", style: "justify-content:space-between" },
+        el("div", {}, el("p", { class: "gedaempft" }, "Raum-Code"), el("p", { class: "code" }, lp.code)),
+        el("div", { style: "text-align:right" },
+          el("p", {}, laeuft ? `Läuft: ${modusInfo(info.modus).name}` : "Keine Übung läuft."),
+          el("p", { class: "gedaempft" }, `Runde ${info.runde}`))),
+      meldung),
+    el("div", { class: "karte" },
+      el("h3", {}, "1. Fassung für neue Spielerinnen und Spieler"),
+      el("div", { class: "segment" }, segA, segB),
+      el("p", { class: "gedaempft" }, "Einzelne Lernende stellst du unten in der Liste um. Gilt ab der nächsten Übung."),
+      el("h3", {}, "2. Übung wählen"),
+      modusKnoepfe,
+      el("div", { class: "zeile", style: "margin-top:14px" },
+        el("button", { class: "primaer", type: "button",
+          onclick: () => infoSchreiben({ modus: lp.modus, runde: (info.runde || 0) + 1, status: "laeuft" }, meldung) },
+          laeuft ? "Neu starten" : "Übung starten"),
+        el("button", { type: "button", disabled: !laeuft,
+          onclick: () => infoSchreiben({ status: "beendet" }, meldung) }, "Übung beenden"))),
+    el("div", { class: "karte" },
+      el("div", { class: "zeile", style: "justify-content:space-between" },
+        el("h3", {}, "Fortschritt"),
+        el("span", { class: "gedaempft", id: "lp-aktualisiert" }, "")),
+      el("div", { class: "zeile", style: "align-items:center" },
+        el("button", { class: "klein", type: "button", "aria-pressed": String(lp.details),
+          onclick: () => { lp.details = !lp.details; zeichnen(); } },
+          lp.details ? "Spielnamen und Fassung ausblenden" : "Spielnamen und Fassung zeigen"),
+        el("span", { class: lp.details ? "fehlertext" : "gedaempft" }, lp.details
+          ? "Jetzt nicht projizieren: Spielnamen und Fassung sind sichtbar."
+          : "Verborgen. Für die Klasse: «Klassenziel» und «Oft falsch für den Beamer».")),
+      el("div", { id: "lp-tabelle" })),
+    el("div", { class: "karte" },
+      el("h3", {}, "Oft falsch beim ersten Versuch (ohne Namen)"),
+      el("div", { id: "lp-fehler" })),
+    el("div", { class: "zeile nicht-drucken" },
+      el("button", { type: "button", onclick: () => { lp.details = false; lp.anzeige = "klassenziel"; zeichnen(); } }, "Klassenziel für den Beamer"),
+      el("button", { type: "button", onclick: () => { lp.details = false; lp.anzeige = "oftfalsch"; lp.oftNr = 0; lp.oftLoesung = false; zeichnen(); } }, "Oft falsch für den Beamer"),
+      KONFIG.ranglisteZeigen === true
+        ? el("button", { type: "button", onclick: () => { lp.details = false; lp.anzeige = "rangliste"; zeichnen(); } }, "Rangliste für den Beamer")
+        : null,
+      el("button", { type: "button", onclick: () => { lp.anzeige = "uebersicht"; zeichnen(); } }, "Aufgaben ansehen"),
+      el("button", { type: "button", onclick: lpExport }, "CSV exportieren"),
+      el("button", { type: "button", onclick: () => frage("Raum schliessen? Alle Daten dieses Raums werden in der Datenbank gelöscht.", raumSchliessen, "Schliessen und löschen") }, "Raum schliessen")));
+
+  lpTabelleZeichnen();
+  lpBeobachten();
+}
+
+async function raumErstellen(meldung) {
+  for (let versuch = 0; versuch < 6; versuch++) {
+    const code = String(1000 + Math.floor(Math.random() * 9000));
+    const r = await Sync.lies(`oeffentlich/raeume/${code}`);
+    if (!r.ok) { meldung.textContent = r.status === 0 ? "Keine Verbindung zur Datenbank." : `Die Datenbank lehnt ab (${Sync.fehler}). Regeln prüfen (README_LP.md, Schritt 3).`; return; }
+    if (r.daten) continue;     // Code ist besetzt
+    const info = { modus: "keiner", runde: 0, status: "warten", vStandard: "A", zeit: Date.now() };
+    const w = await Sync.schreib(`oeffentlich/raeume/${code}`, { info });
+    if (!w.ok) { meldung.textContent = `Raum konnte nicht erstellt werden (${Sync.fehler}).`; return; }
+    Zustand.lp.code = code; Zustand.lp.daten = { info };
+    Speicher.schreib("lpRaum", code);
+    zeichnen();
+    return;
+  }
+  meldung.textContent = "Kein freier Code gefunden. Nochmals versuchen.";
+}
+
+async function infoSchreiben(aenderung, meldung) {
+  const lp = Zustand.lp;
+  const alt = (lp.daten && lp.daten.info) || { modus: "keiner", runde: 0, status: "warten", vStandard: "A" };
+  const neu = Object.assign({}, alt, aenderung, { zeit: Date.now() });
+  const r = await Sync.schreib(`oeffentlich/raeume/${lp.code}/info`, neu);
+  if (!r.ok) { if (meldung) meldung.textContent = "Konnte nicht speichern. Verbindung prüfen."; return; }
+  lp.daten = Object.assign({}, lp.daten, { info: neu });
+  zeichnen();
+}
+
+function infoSig(info) {
+  return info ? [info.modus, info.runde, info.status, info.vStandard].join("|") : "";
+}
+
+/* Takt der LP-Ansicht: wird nur einmal gestartet (sonst Endlosschleife beim Neuzeichnen). */
+function lpBeobachten() {
+  const lp = Zustand.lp;
+  if (lp.taktLaeuft === lp.code) return;
+  lp.taktLaeuft = lp.code;
+  letzteSignatur = null;
+  Sync.starteTakt(`oeffentlich/raeume/${lp.code}`, (daten) => {
+    if (Zustand.bildschirm !== "lp" || !lp.code) return;
+    const z = $("#lp-aktualisiert");
+    if (z) z.textContent = "Stand " + new Date().toLocaleTimeString("de-CH");
+    if (!hatSichGeaendert(daten)) return;
+    const infoAlt = infoSig(lp.daten && lp.daten.info);
+    lp.daten = daten;
+    if (!daten) return;
+    if (lp.anzeige === "rangliste" || lp.anzeige === "klassenziel") { zeichnen(); return; }
+    if (lp.anzeige === "steuerung" && infoAlt !== infoSig(daten.info) && darfNeuZeichnen()) { zeichnen(); return; }
+    lpTabelleZeichnen();
+  });
+}
+
+function lpTaktStoppen() {
+  Sync.stoppeTakt();
+  Zustand.lp.taktLaeuft = null;
+}
+
+function spielerListe() {
+  const d = Zustand.lp.daten;
+  if (!d || !d.spieler) return [];
+  return Object.entries(d.spieler).map(([id, s]) => Object.assign({ id }, s));
+}
+
+function lpTabelleZeichnen() {
+  const ziel = $("#lp-tabelle");
+  if (!ziel) return;
+  const lp = Zustand.lp;
+  const info = (lp.daten && lp.daten.info) || {};
+  const zut = (lp.daten && lp.daten.zuteilung) || {};
+  const liste = spielerListe().sort((a, b) => String(a.n).localeCompare(String(b.n), "de"));
+  lpFehlerZeichnen();
+  if (!liste.length) { ziel.replaceChildren(el("p", { class: "gedaempft" }, "Noch niemand im Raum. Zeig den Code an der Wandtafel.")); return; }
+  const zeigen = !!lp.details;
+  // ohne Details: feste Reihenfolge nach Gerätekennung (verrät keine Namen), Spalte «Fassung» fehlt
+  if (!zeigen) liste.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  ziel.replaceChildren(el("table", {},
+    el("thead", {}, el("tr", {}, (zeigen ? ["Spielname", "Fassung", "Übung", "Fortschritt", "Punkte"] : ["Gerät", "Übung", "Fortschritt", "Punkte"]).map(t => el("th", {}, t)))),
+    el("tbody", {}, liste.map((s, i) => {
+      const geplant = zut[s.id] || info.vStandard || "A";
+      const aktuell = s.m === info.modus && s.rd === info.runde;
+      const anteil = s.t ? Math.round(s.b / s.t * 100) : 0;
+      return el("tr", {},
+        el("td", {}, zeigen ? s.n : `Gerät ${i + 1}`),
+        !zeigen ? null : el("td", {}, el("button", { class: "klein", type: "button", title: "Fassung umstellen (gilt ab der nächsten Übung)",
+          onclick: async () => {
+            const neu = geplant === "A" ? "B" : "A";
+            const r = await Sync.schreib(`oeffentlich/raeume/${lp.code}/zuteilung/${s.id}`, neu);
+            if (r.ok) { lp.daten.zuteilung = Object.assign({}, zut, { [s.id]: neu }); lpTabelleZeichnen(); }
+          } }, `${fassung(geplant)} ${geplant}`),
+          s.v && s.v !== geplant && aktuell ? el("span", { class: "gedaempft" }, ` (jetzt ${fassung(s.v)})`) : null),
+        el("td", {}, s.m && s.m !== "keiner" ? modusInfo(s.m).name + (aktuell ? "" : " (alt)") : "wartet"),
+        el("td", {}, s.m === "m5" ? el("span", { class: "gedaempft" }, "offen, ohne Zählung")
+          : el("div", { class: "zeile", style: "flex-wrap:nowrap" },
+              el("div", { class: "minibalken", style: "flex:1" }, el("i", { style: `width:${anteil}%` })),
+              el("span", {}, `${s.b || 0}/${s.t || 0}${s.t && s.b >= s.t ? " ✓" : ""}`))),
+        el("td", {}, String(s.p || 0)));
+    }))));
+}
+
+/* Kurztext einer Aufgabe für die Besprechung (Nummer wie in der Aufgabenübersicht). */
+function itemKurztext(m, v, nr) {
+  const it = DATEN[m][v][nr];
+  if (!it) return "";
+  if (m === "m1") return `Richtig: «${it.bericht}»`;
+  if (m === "m2") return `«${satzAusTeilen(it.teile)}»`;
+  if (m === "m3") return `«${it.titel}»`;
+  return `«${it.satz.replace("___", "…")}» (${it.grundform})`;
+}
+
+/* Anonyme Zähler pro Aufgabe: wie viele Lernende die Aufgabe nicht beim ersten Versuch lösten. */
+function oftFalsch(m) {
+  const f = (Zustand.lp.daten && Zustand.lp.daten.fehler) || {};
+  const liste = [];
+  ["A", "B"].forEach(v => {
+    Object.entries(f[m + v] || {}).forEach(([nr, n]) => {
+      if (Number(n) > 0 && DATEN[m] && DATEN[m][v] && DATEN[m][v][Number(nr)]) liste.push({ m, v, nr: Number(nr), n: Number(n) });
+    });
+  });
+  return liste.sort((a, b) => b.n - a.n || a.nr - b.nr);
+}
+
+function lpFehlerZeichnen() {
+  const ziel = $("#lp-fehler");
+  if (!ziel) return;
+  const lp = Zustand.lp;
+  const info = (lp.daten && lp.daten.info) || {};
+  const m = info.modus && info.modus !== "keiner" ? info.modus : lp.modus;
+  if (m === "m5") { ziel.replaceChildren(el("p", { class: "gedaempft" }, "Der Check-Bot zählt keine Fehler.")); return; }
+  const top = oftFalsch(m).slice(0, 3);
+  const wTop = m === "m2" ? oftFalschW() : [];
+  ziel.replaceChildren(...[
+    top.length
+      ? el("ol", { class: "fehlerliste" }, top.map(e => el("li", {},
+          el("b", {}, `${lp.details ? fassung(e.v) + " " : "Version "}${e.v}, Aufgabe ${e.nr + 1}: ${e.n}×`), " ", itemKurztext(e.m, e.v, e.nr))))
+      : el("p", { class: "gedaempft" }, `Noch keine Fehlversuche in «${modusInfo(m).name}».`),
+    wTop.length ? el("p", {}, el("b", {}, "W-Fragen mit Fehlversuch: "), wTop.map(([w, n]) => `${w} ${n}×`).join(", ")) : null,
+    el("p", { class: "gedaempft" }, "Zählt, wie oft eine Aufgabe nicht beim ersten Versuch gelöst wurde: pro Gerät und Runde höchstens einmal, Wiederholungen zählen nicht. Nur Zahlen, keine Namen, keine Antworten. Die Nummer ist dieselbe wie in «Aufgaben ansehen»."),
+    top.length
+      ? el("button", { class: "klein nicht-drucken", type: "button", onclick: () => frage("Alle Fehlerzähler in diesem Raum auf 0 setzen?", async () => {
+          const r = await Sync.loesche(`oeffentlich/raeume/${lp.code}/fehler`);
+          if (r.ok && lp.daten) { lp.daten.fehler = null; letzteSignatur = null; lpFehlerZeichnen(); }
+        }, "Ja, auf 0 setzen") }, "Zähler auf 0 setzen")
+      : null].filter(Boolean));
+}
+
+/* Modus 2: welche W-Fragen beim ersten Versuch an einem Satzteil falsch waren (A und B zusammen). */
+function oftFalschW() {
+  const f = (Zustand.lp.daten && Zustand.lp.daten.fehler) || {};
+  const summe = {};
+  ["A", "B"].forEach(v => Object.entries(f["m2" + v + "w"] || {}).forEach(([k, n]) => { summe[k] = (summe[k] || 0) + (Number(n) || 0); }));
+  const name = Object.fromEntries(Object.entries(W_SCHLUESSEL).map(([w, k]) => [k, w]));
+  return Object.entries(summe).filter(([k, n]) => n > 0 && name[k]).sort((a, b) => b[1] - a[1]).map(([k, n]) => [name[k], n]);
+}
+
+/* Aufgabe für die gemeinsame Besprechung: wie auf Papier, ohne Fassungssymbol, ohne Zähler, Lösung auf Knopfdruck. */
+function besprechungsInhalt(m, v, nr, mitLoesung) {
+  const it = DATEN[m][v][nr];
+  const seed = nr + 1 + (v === "B" ? 100 : 0) + m.charCodeAt(1) * 1000;
+  if (m === "m1") return el("div", { class: "stapel" }, festMischen([it.bericht, ...it.andere], seed).map(t =>
+    el("div", { class: "antwort" + (mitLoesung && t === it.bericht ? " richtig" : "") }, (mitLoesung && t === it.bericht ? "✓ " : "") + t)));
+  if (m === "m2") return el("p", { class: "beamer-satz" }, mitLoesung
+    ? it.teile.map(([t, w]) => w ? el("span", {}, el("u", {}, t), el("sup", {}, " " + w), " ") : t + " ")
+    : satzAusTeilen(it.teile));
+  if (m === "m3") {
+    const zeilen = mitLoesung ? it.schritte : festMischen(it.schritte, seed, true);
+    return [el("h3", {}, it.titel), el(mitLoesung ? "ol" : "ul", { class: "beamer-liste" }, zeilen.map(t => el("li", {}, t)))];
+  }
+  const richtig = it.optionen.find(o => o[1] === "praet")[0];
+  return [el("p", { class: "beamer-satz" }, it.satz.replace("___", mitLoesung ? `[${richtig}]` : "_____"), el("span", { class: "gedaempft" }, ` (${it.grundform})`)),
+    el("p", {}, it.optionen.map(o => o[0]).join("   ·   "))];
+}
+
+function lpOftFalschBeamer() {
+  const lp = Zustand.lp;
+  const info = (lp.daten && lp.daten.info) || {};
+  const m = info.modus && info.modus !== "keiner" ? info.modus : lp.modus;
+  const top = m === "m5" ? [] : oftFalsch(m).slice(0, 3);
+  const nr = Math.min(lp.oftNr || 0, Math.max(0, top.length - 1));
+  const e = top[nr];
+  const wTop = m === "m2" ? oftFalschW() : [];
+  buehne.append(el("div", { class: "karte" },
+    el("h2", {}, "Diese Aufgabe besprechen wir"),
+    e ? [el("p", { class: "gedaempft" }, PAPIER_AUFTRAG[m]),
+         ...[].concat(besprechungsInhalt(m, e.v, e.nr, !!lp.oftLoesung)),
+         wTop.length ? el("p", {}, `In dieser Übung oft schwierig: ${wTop.slice(0, 2).map(x => x[0]).join(" und ")}`) : null]
+      : el("p", {}, m === "m5" ? "Der Check-Bot zählt keine Fehler." : "Noch keine Aufgabe mit Fehlversuch."),
+    el("div", { class: "zeile nicht-drucken", style: "margin-top:16px" },
+      e ? el("button", { type: "button", onclick: () => { lp.oftLoesung = !lp.oftLoesung; zeichnen(); } }, lp.oftLoesung ? "Lösung verbergen" : "Lösung zeigen") : null,
+      top.length > 1 ? el("button", { type: "button", onclick: () => { lp.oftNr = (nr + 1) % top.length; lp.oftLoesung = false; zeichnen(); } }, `Andere Aufgabe (${nr + 1} von ${top.length})`) : null,
+      el("button", { class: "primaer", type: "button", onclick: () => { lp.anzeige = "steuerung"; zeichnen(); } }, "Zurück zur Steuerung"))));
+}
+
+/* Klassenziel statt Rangliste: alle gelösten Aufgaben der Klasse zusammen, ohne Namen und ohne Plätze. */
+function lpKlassenziel() {
+  const lp = Zustand.lp;
+  const info = (lp.daten && lp.daten.info) || {};
+  const dabei = spielerListe().filter(s => s.m === info.modus && s.rd === info.runde && s.m !== "m5" && s.m !== "keiner");
+  const geloest = dabei.reduce((summe, s) => summe + Math.min(s.b || 0, s.t || 0), 0);
+  const moeglich = dabei.reduce((summe, s) => summe + (s.t || 0), 0);
+  const fertig = dabei.filter(s => s.t && s.b >= s.t).length;
+  const anteil = moeglich ? Math.round(geloest / moeglich * 100) : 0;
+  buehne.append(el("div", { class: "karte" },
+    el("h2", {}, info.modus && info.modus !== "keiner" ? `Klassenziel: ${modusInfo(info.modus).name}` : "Klassenziel"),
+    dabei.length
+      ? [el("p", { class: "ziel-zahl" }, `Zusammen gelöst: ${geloest} von ${moeglich} Aufgaben`),
+         el("div", { class: "ziel-balken", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": String(moeglich), "aria-valuenow": String(geloest) },
+           el("i", { style: `width:${anteil}%` })),
+         el("p", {}, `${fertig} von ${dabei.length} sind fertig.`)]
+      : el("p", {}, "Noch keine Übung gestartet oder noch niemand dabei."),
+    el("p", { class: "gedaempft" }, "Ohne Namen und ohne Plätze. Jede gelöste Aufgabe zählt für die ganze Klasse."),
+    el("div", { class: "zeile nicht-drucken" },
+      el("button", { class: "primaer", type: "button", onclick: () => { lp.anzeige = "steuerung"; zeichnen(); } }, "Zurück zur Steuerung"))));
+  if (lp.code) lpBeobachten();
+}
+
+function lpRangliste() {
+  const lp = Zustand.lp;
+  const info = (lp.daten && lp.daten.info) || {};
+  const top = spielerListe().filter(s => s.m === info.modus && s.rd === info.runde && s.m !== "m5")
+    .sort((a, b) => (b.p || 0) - (a.p || 0)).slice(0, 3);
+  buehne.append(el("div", { class: "karte" },
+    el("h2", {}, info.modus && info.modus !== "keiner" ? `Rangliste: ${modusInfo(info.modus).name}` : "Rangliste"),
+    top.length ? el("ol", { class: "rang" }, top.map(s => el("li", {}, `${s.n} · ${s.p || 0} Punkte`)))
+               : el("p", {}, "Noch keine Punkte."),
+    el("p", { class: "gedaempft" }, "Es werden nur die ersten drei Plätze gezeigt."),
+    el("div", { class: "zeile nicht-drucken" },
+      el("button", { class: "primaer", type: "button", onclick: () => { lp.anzeige = "steuerung"; zeichnen(); } }, "Zurück zur Steuerung"))));
+  if (lp.code) lpBeobachten();
+}
+
+function lpExport() {
+  const zeilen = [["Spielname", "Fassung", "Übung", "Runde", "gelöst", "Aufgaben", "Punkte", "Zeit"]];
+  spielerListe().forEach(s => zeilen.push([s.n, `${fassung(s.v)} ${s.v}`, s.m && s.m !== "keiner" ? modusInfo(s.m).name : "-",
+    s.rd, s.b, s.t, s.p, new Date(s.zeit || Date.now()).toLocaleString("de-CH")]));
+  // Oft falsch (anonyme Zähler pro Aufgabe) für die formative Auswertung
+  const fehler = ["m1", "m2", "m3", "m4"].flatMap(m => oftFalsch(m));
+  if (fehler.length) {
+    zeilen.push([], ["Übung", "Fassung", "Aufgabe", "nicht beim ersten Versuch gelöst", "Aufgabe (Kurztext)"]);
+    fehler.forEach(e => zeilen.push([modusInfo(e.m).name, `${fassung(e.v)} ${e.v}`, e.nr + 1, e.n, itemKurztext(e.m, e.v, e.nr)]));
+  }
+  csvHerunterladen(`bericht-detektiv_raum-${Zustand.lp.code}.csv`, zeilen);
+}
+
+async function raumSchliessen() {
+  const lp = Zustand.lp;
+  lpTaktStoppen();
+  await Sync.loesche(`oeffentlich/raeume/${lp.code}`);
+  lp.code = null; lp.daten = null;
+  Speicher.loesche("lpRaum");
+  zeichnen();
+}
+
+/* Aufgabenübersicht nach Fassung ● / ■, druckbar.
+   Standard: Papierfassung für die Lernenden OHNE Lösungen (Rückfallplan).
+   Option «mit Lösungen» nur für die LP (Kontrolle). Reihenfolgen auf Papier sind fest gemischt (gleich bei jedem Druck). */
+function festMischen(liste, seed, nieGleich = false) {
+  // deterministisch (mulberry32), damit jeder Ausdruck gleich aussieht
+  let t = (seed * 2654435761) >>> 0;
+  const zufall = () => { t = (t + 0x6D2B79F5) >>> 0; let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r; return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
+  const a = liste.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(zufall() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  if (nieGleich && a.length > 1 && a.every((x, i) => x === liste[i])) a.reverse();   // Anleitung: nie in Lösungsreihenfolge
+  return a;
+}
+
+function satzAusTeilen(teile) {
+  return teile.map(t => t[0]).join(" ").replace(/ ([.,])/g, "$1");
+}
+
+const PAPIER_AUFTRAG = {
+  m1: "Welcher Satz passt in einen Bericht? Kreuze ihn an.",
+  m2: "Unterstreiche die Satzteile. Schreibe die passende W-Frage darüber.",
+  m3: "In welcher Reihenfolge machst du die Schritte? Schreibe die Nummern 1, 2, 3 … auf die Linien.",
+  m4: "Welche Verbform passt in einen Bericht? Kreuze sie an."
+};
+
+function lpUebersicht() {
+  const lp = Zustand.lp;
+  const m = lp.uebersichtModus;
+  const mitLoesung = !!lp.uebersichtLoesung;
+  const welche = lp.uebersichtVersion || "AB";
+  const tabs = el("div", { class: "segment nicht-drucken", style: "flex-wrap:wrap" }, DATEN.modi.map(x =>
+    el("button", { type: "button", class: x.id === m ? "an" : "", style: "flex:1 1 150px",
+                   onclick: () => { lp.uebersichtModus = x.id; zeichnen(); } }, `${x.sym} ${x.name}`)));
+  const optionen = el("div", { class: "zeile nicht-drucken", style: "margin-top:12px;align-items:center" },
+    el("label", { style: "display:flex;gap:8px;align-items:center" },
+      el("input", { type: "checkbox", checked: mitLoesung, onchange: (e) => { lp.uebersichtLoesung = e.target.checked; zeichnen(); } }),
+      "mit Lösungen (nur für die LP)"),
+    el("span", { class: "gedaempft" }, "Drucken:"),
+    ...[["AB", "Version A und B"], ["A", "nur Version A ●"], ["B", "nur Version B ■"]].map(([k, t]) =>
+      el("button", { type: "button", class: k === welche ? "an" : "", onclick: () => { lp.uebersichtVersion = k; zeichnen(); } }, t)));
+
+  const kaestchen = (text) => el("div", { class: "papier-wahl" }, "☐ " + text);
+  const spalte = (v) => {
+    if (m === "m5") return el("div", {}, el("p", {}, "Der Check-Bot hat keine Aufgaben und keine Fassungen. Er prüft auf: Ich-/Wir-Form, Gefühls- und Meinungswörter, Ausrufezeichen, Präsens- und Perfekt-Signale, fehlende Wörter für Wer/Wann/Wo und (ab 3 Sätzen) für Grund oder Folgen, Reihenfolgewörter (ab 3 Sätzen). In Version A höchstens 3 Hinweise auf einmal. Wortlisten im Block DATEN.checkbot in index.html."));
+    const items = DATEN[m][v];
+    const kopf = mitLoesung
+      ? el("h3", {}, `${fassung(v)} Version ${v} (${items.length}): Lösungen`)
+      : el("h3", {}, `${fassung(v)} Version ${v}`);
+    const zusatz = (!mitLoesung && m === "m2") ? el("p", { class: "gedaempft" }, "W-Fragen: " + DATEN.m2.knoepfe[v].join(" ") + " · Bei «Was?» unterstreichst du das Verb und das Ding, auch wenn sie getrennt stehen.") : null;
+    return el("div", {}, kopf, zusatz, items.map((it, i) => {
+      const seed = i + 1 + (v === "B" ? 100 : 0) + m.charCodeAt(1) * 1000;
+      let inhalt;
+      if (mitLoesung) {
+        if (m === "m1") inhalt = [el("div", {}, "✓ " + it.bericht), ...it.andere.map(a => el("div", { class: "gedaempft" }, "✗ " + a))];
+        else if (m === "m2") inhalt = el("div", {}, it.teile.map(([t, w]) => w ? el("span", {}, el("u", {}, t), el("sup", {}, " " + w), " ") : t + " "));
+        else if (m === "m3") inhalt = [el("b", {}, it.titel), el("ol", { style: "margin:4px 0;padding-left:22px" }, it.schritte.map(s => el("li", {}, s)))];
+        else inhalt = el("div", {}, it.satz.replace("___", `[${it.optionen.find(o => o[1] === "praet")[0]}]`), el("span", { class: "gedaempft" }, ` (${it.grundform}; Auswahl: ${it.optionen.map(o => o[0]).join(" / ")})`));
+      } else {
+        if (m === "m1") inhalt = festMischen([it.bericht, ...it.andere], seed).map(kaestchen);
+        else if (m === "m2") inhalt = el("div", { class: "papier-satz" }, satzAusTeilen(it.teile));
+        else if (m === "m3") {
+          // Schritt 1 steht schon da, falls in DATEN.m3.schritt1Vorgegeben so eingestellt (wie in der App)
+          const vorgegeben = DATEN.m3.schritt1Vorgegeben[v] ? it.schritte[0] : null;
+          const rest = festMischen(vorgegeben ? it.schritte.slice(1) : it.schritte, seed, true);
+          const zeilen = (vorgegeben ? [vorgegeben] : []).concat(rest);
+          inhalt = [el("b", {}, it.titel), el("div", {}, zeilen.map(s =>
+            el("div", { class: "papier-wahl" }, (s === vorgegeben ? "  1  " : "____ ") + "  " + s)))];
+        }
+        else inhalt = [el("div", {}, it.satz + ` (${it.grundform})`),
+                       el("div", { class: "papier-reihe" }, festMischen(it.optionen.map(o => o[0]), seed).map(kaestchen))];
+      }
+      return el("div", { class: "uebersicht-item" }, el("b", {}, `${i + 1}. `), inhalt);
+    }));
+  };
+  const versionen = m === "m5" ? ["A"] : (welche === "AB" ? ["A", "B"] : [welche]);
+  const titel = mitLoesung ? `Lösungen: ${modusInfo(m).name}` : `Bericht-Detektiv: ${modusInfo(m).name}`;
+  const auftrag = mitLoesung
+    ? el("p", { class: "gedaempft" }, `Auftrag auf dem Bildschirm: «${m === "m5" ? "Prüfe deinen Bericht." : DATEN[m].auftrag}» · Merksatz ${modusInfo(m).merksatz}`)
+    : el("p", {}, el("b", {}, "Auftrag: "), m === "m5" ? "Prüfe deinen Bericht." : PAPIER_AUFTRAG[m]);
+  buehne.append(
+    el("div", { class: "karte" },
+      el("h2", {}, titel),
+      mitLoesung ? null : el("p", { class: "papier-name" }, "Name: ______________________________"),
+      auftrag,
+      el("p", { class: "gedaempft nicht-drucken" }, mitLoesung
+        ? "Lösungsübersicht für die LP. Nicht an die Lernenden abgeben."
+        : "Papierfassung für die Lernenden, ohne Lösungen. Die Lösungen siehst du mit «mit Lösungen»."),
+      tabs, optionen),
+    el("div", { class: "karte" }, el("div", { class: versionen.length > 1 ? "spalten" : "" }, versionen.map(spalte))),
+    el("div", { class: "zeile nicht-drucken" },
+      el("button", { class: "primaer", type: "button", onclick: () => { lp.anzeige = "steuerung"; zeichnen(); } }, "Zurück"),
+      el("button", { type: "button", onclick: () => window.print() }, mitLoesung ? "Lösungen drucken" : "Papierfassung drucken")));
+}
+
+/* ========================================================================
+   6. START
+   ======================================================================== */
+(function start() {
+  const gespeichert = Speicher.lies("sitzung", null);
+  if (!(ONLINE_EINGERICHTET && gespeichert && gespeichert.art === "raum")) Speicher.loesche("sitzung");
+  zeichnen();
+})();
+</script>
+</body>
+</html>
